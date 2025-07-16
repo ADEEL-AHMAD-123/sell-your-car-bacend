@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
 
   checksLeft: {
     type: Number,
-    default: 2, // Each user gets 2 free checks
+    default: 5, // Each user gets 2 free checks
   },
 
   firstLogin: {
