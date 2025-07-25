@@ -9,8 +9,7 @@ const {
   getUserQuotes,
   getAdminStats,
   getDailyQuoteAnalytics,
-  getPendingManualQuotes,
-  reviewManualQuote
+ 
 } = require('../controllers/adminController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -28,9 +27,6 @@ router.delete('/user/:id', deleteUser);
 // Quotes
 router.get('/quotes/:userId', getUserQuotes);
 
-// Manual Quotes (Admin)
-router.get('/manual-quotes/pending', getPendingManualQuotes);
-router.put('/manual-quotes/review/:id', reviewManualQuote);
 
 // Analytics
 router.get('/stats', getAdminStats);
