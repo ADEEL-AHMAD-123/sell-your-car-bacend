@@ -1,7 +1,10 @@
-// controllers/quoteController.js
 const User = require('../models/User');
+const Quote = require('../models/Quote');
+const ManualQuote = require('../models/ManualQuote');
 const { fetchVehicleData } = require('../utils/dvlaClient');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
+const sendResponse = require('../utils/sendResponse');
+const ErrorResponse = require('../utils/errorResponse');
 
 const SCRAP_RATE_PER_KG = parseFloat(process.env.SCRAP_RATE_PER_KG || 0.15);
 
@@ -9,37 +12,96 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   const { regNumber } = req.body;
 
   if (!regNumber) {
-    return res.status(400).json({ 
-      message: 'registration number is required.',
-    });
+    return next(new ErrorResponse('Registration number is required.', 400));
   }
-
-  // const user = await User.findById(req.user.id);
-  // if (!user || user.checksLeft <= 0) {
-  //   return res.status(403).json({
-  //     message: 'No checks left.',
-  //   });
-  // }
 
   const vehicle = await fetchVehicleData(regNumber);
 
-  const weight = vehicle.revenueWeight || 0;
-  const estimatedPrice = (weight * SCRAP_RATE_PER_KG).toFixed(2);
+  if (!vehicle || !vehicle.registrationNumber) {
+    return next(new ErrorResponse('Vehicle not found or invalid registration.', 404));
+  }
 
-  // Deduct a check
-  user.checksLeft -= 1;
-  if (user.firstLogin) user.firstLogin = false;
-  await user.save();
+  const weight = vehicle.revenueWeight;
+  const estimatedPrice = weight ? (weight * SCRAP_RATE_PER_KG).toFixed(2) : null;
 
-  res.status(200).json({
-    message: 'Quote generated successfully',
-    quote: {
-      regNumber: vehicle.registrationNumber,
-      postcode,
-      make: vehicle.make,
-      revenueWeight: weight,
-      estimatedScrapPrice: estimatedPrice,
-    },
-    checksLeft: user.checksLeft,
+  const quoteData = {
+    registrationNumber: vehicle.registrationNumber,
+    make: vehicle.make,
+    model: vehicle.model || null,
+    fuelType: vehicle.fuelType,
+    co2Emissions: vehicle.co2Emissions,
+    colour: vehicle.colour,
+    yearOfManufacture: vehicle.yearOfManufacture,
+    engineCapacity: vehicle.engineCapacity,
+    revenueWeight: weight,
+    taxStatus: vehicle.taxStatus,
+    motStatus: vehicle.motStatus,
+    euroStatus: vehicle.euroStatus,
+    realDrivingEmissions: vehicle.realDrivingEmissions,
+    wheelplan: vehicle.wheelplan,
+    estimatedScrapPrice: estimatedPrice,
+  };
+
+  if (req.user && req.user._id) {
+    await Quote.create({
+      userId: req.user._id,
+      regNumber,
+      data: quoteData,
+    });
+  }
+
+  sendResponse(res, 200, 'Quote generated successfully', {
+    vehicle: quoteData,
+    autoQuoteAvailable: !!estimatedPrice,
   });
 });
+
+// @desc    Submit a manual quote
+// @route   POST /api/quote/manual-quote
+// @access  Private
+exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
+  const {
+    regNumber,
+    make,
+    model,
+    year,
+    fuelType,
+    colour,
+    weight,
+    wheelPlan,
+    userEstimatedPrice,
+    message,
+  } = req.body;
+
+  if (!make || !model || !year || !fuelType) {
+    return next(new ErrorResponse('Make, model, year, and fuel type are required.', 400));
+  }
+
+  let estimatedScrapPrice = null;
+  if (weight) {
+    estimatedScrapPrice = (weight * SCRAP_RATE_PER_KG).toFixed(2);
+  }
+
+  const imageUrls = req.files?.map(file => file.path) || [];
+
+  const manualQuote = await ManualQuote.create({
+    userId: req.user._id,
+    regNumber: regNumber || 'MANUAL',
+    make,
+    model,
+    year,
+    fuelType,
+    colour,
+    weight,
+    wheelPlan,
+    userEstimatedPrice,
+    message,
+    estimatedScrapPrice,
+    images: imageUrls, // ⬅ store URLs
+  });
+
+  sendResponse(res, 201, 'Manual quote submitted successfully', { manualQuote });
+});
+
+
+ 

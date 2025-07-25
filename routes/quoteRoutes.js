@@ -1,9 +1,15 @@
 // routes/quoteRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getQuote } = require('../controllers/quoteController');
-const requireAuth = require('../middlewares/authMiddleware');
+const { getQuote,submitManualQuote } = require('../controllers/quoteController');
+const {protect} = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/upload');
+router.post('/get', protect, getQuote);
+router.post(
+    '/manual-quote',
+    protect,
+    upload.array('images', 5), 
+    submitManualQuote
+  );
 
-router.post('/get', requireAuth, getQuote);
-
-module.exports = router;
+module.exports = router; 

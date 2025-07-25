@@ -2,7 +2,13 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  name: {
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  lastName: {
     type: String,
     required: true,
     trim: true,
@@ -21,9 +27,15 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+
   checksLeft: {
     type: Number,
-    default: 5, // Each user gets 2 free checks
+    default: 2,
   },
 
   firstLogin: {

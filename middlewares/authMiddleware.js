@@ -3,9 +3,9 @@ const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const requireAuth = async (req, res, next) => {
+// Middleware: Require login
+const protect = async (req, res, next) => {
   const token = req.cookies?.token;
-
   if (!token) return res.status(401).json({ message: 'Not authenticated' });
 
   try {
@@ -20,4 +20,12 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-module.exports = requireAuth;
+// Middleware: Admin only
+const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied: Admins only' });
+  }
+  next();
+};
+
+module.exports = { protect, adminOnly }; 

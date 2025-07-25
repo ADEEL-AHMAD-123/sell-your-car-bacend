@@ -1,4 +1,3 @@
-// utils/dvlaClient.js
 const axios = require('axios');
 
 const DVLA_API_URL = 'https://uat.driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles';
@@ -17,17 +16,21 @@ const fetchVehicleData = async (registrationNumber) => {
       }
     );
 
+    console.log('✅ [DVLA Response]', response.data);
     return response.data;
   } catch (error) {
     const status = error.response?.status || 500;
-
-    // Prefer DVLA-style message if available
     const message =
       error.response?.data?.errors?.[0]?.detail ||
       error.response?.data?.message ||
-      'Something went wrong while fetching vehicle info.';
+      'Failed to fetch vehicle data from DVLA.';
 
-    // Throw custom error object for catchAsyncErrors
+    console.error('❌ [DVLA Error]', {
+      status,
+      message,
+      raw: error.response?.data || error.message
+    });
+
     const err = new Error(message);
     err.statusCode = status;
     throw err;
