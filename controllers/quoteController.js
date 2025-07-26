@@ -7,9 +7,9 @@ const ErrorResponse = require("../utils/errorResponse");
 
 const SCRAP_RATE_PER_KG = parseFloat(process.env.SCRAP_RATE_PER_KG || 0.15);
 
-// @desc    Generate auto quote from reg number
-// @route   POST /api/quote/auto
-// @access  Private
+// @desc Generate auto quote from reg number
+// @route POST /api/quote/auto
+// @access Private
 exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   const { regNumber } = req.body;
 
@@ -27,7 +27,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 
   const weight = vehicle.revenueWeight;
   const estimatedPrice = weight
-    ? (weight * SCRAP_RATE_PER_KG).toFixed(2)
+    ? parseFloat((weight * SCRAP_RATE_PER_KG).toFixed(2))
     : null;
 
   const quoteData = {
@@ -49,15 +49,64 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
     type: "auto",
   };
 
+  let savedQuote = null;
+
   if (req.user && req.user._id) {
-    await Quote.create({
+    savedQuote = await Quote.create({
       userId: req.user._id,
       ...quoteData,
     });
+
+    // Filter only safe fields to return
+    const {
+      _id,
+      regNumber,
+      make,
+      model,
+      year,
+      fuelType,
+      colour,
+      wheelPlan,
+      engineCapacity,
+      revenueWeight,
+      co2Emissions,
+      taxStatus,
+      motStatus,
+      euroStatus,
+      realDrivingEmissions,
+      estimatedScrapPrice,
+      type,
+      createdAt,
+    } = savedQuote;
+
+    return sendResponse(res, 200, "Quote generated successfully", {
+      quote: {
+        _id,
+        regNumber,
+        make,
+        model,
+        year,
+        fuelType,
+        colour,
+        wheelPlan,
+        engineCapacity,
+        revenueWeight,
+        co2Emissions,
+        taxStatus,
+        motStatus,
+        euroStatus,
+        realDrivingEmissions,
+        estimatedScrapPrice,
+        type,
+        createdAt,
+      },
+      autoQuoteAvailable: !!estimatedPrice,
+    });
   }
 
-  sendResponse(res, 200, "Quote generated successfully", {
-    vehicle: quoteData,
+  // For guests: return only public fields
+  return sendResponse(res, 200, "Quote generated successfully", {
+    quote: quoteData,
     autoQuoteAvailable: !!estimatedPrice,
   });
 });
@@ -80,13 +129,14 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   } = req.body;
 
   if (!make || !model || !year || !fuelType) {
-    return next(new ErrorResponse("Make, model, year, and fuel type are required.", 400));
+    return next(
+      new ErrorResponse("Make, model, year, and fuel type are required.", 400)
+    );
   }
 
-  let estimatedScrapPrice = null;
-  if (revenueWeight) {
-    estimatedScrapPrice = (revenueWeight * SCRAP_RATE_PER_KG).toFixed(2);
-  }
+  const estimatedScrapPrice = revenueWeight
+    ? parseFloat((revenueWeight * SCRAP_RATE_PER_KG).toFixed(2))
+    : null;
 
   const imageUrls = req.files?.map((file) => file.path) || [];
 
@@ -109,40 +159,18 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   sendResponse(res, 201, "Manual quote submitted successfully", { quote });
 });
 
-// @desc    Client accept or reject quote
-// @route   PATCH /api/quote/:id/decision
-// @access  Private
-exports.updateClientDecision = catchAsyncErrors(async (req, res, next) => {
-  const { decision } = req.body;
-  const { id } = req.params;
-
-  if (!['accepted', 'rejected'].includes(decision)) {
-    return next(new ErrorResponse('Invalid decision', 400));
-  }
-
-  const quote = await Quote.findOne({ _id: id, userId: req.user._id });
-
-  if (!quote) {
-    return next(new ErrorResponse('Quote not found', 404));
-  }
-
-  if (quote.clientDecision !== 'pending') {
-    return next(new ErrorResponse('You have already responded to this quote.', 400));
-  }
-
-  quote.clientDecision = decision;
-  await quote.save();
-
-  sendResponse(res, 200, `Quote ${decision} successfully`, { quote });
-});
-
-
-// @desc    Submit collection details (client only after accepting)
-// @route   PATCH /api/quote/:id/collection-details
-// @access  Private
-exports.submitCollectionDetails = catchAsyncErrors(async (req, res, next) => {
+// @desc Confirm quote with collection details
+// @route PATCH /api/quote/:id/confirm
+// @access Private
+exports.confirmQuoteWithCollection = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
   const { pickupDate, contactNumber, address } = req.body;
+
+  if (!pickupDate || !contactNumber || !address) {
+    return next(
+      new ErrorResponse("All collection details are required.", 400)
+    );
+  }
 
   const quote = await Quote.findOne({ _id: id, userId: req.user._id });
 
@@ -150,15 +178,13 @@ exports.submitCollectionDetails = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Quote not found", 404));
   }
 
-  if (quote.clientDecision !== "accepted") {
+  if (quote.clientDecision !== "pending") {
     return next(
-      new ErrorResponse(
-        "You must accept the quote before providing collection details.",
-        400
-      )
+      new ErrorResponse("You have already responded to this quote.", 400)
     );
   }
 
+  quote.clientDecision = "accepted";
   quote.collectionDetails = {
     pickupDate,
     contactNumber,
@@ -168,10 +194,11 @@ exports.submitCollectionDetails = catchAsyncErrors(async (req, res, next) => {
 
   await quote.save();
 
-  sendResponse(res, 200, "Collection details submitted successfully", {
+  sendResponse(res, 200, "Quote accepted and collection details submitted", {
     quote,
   });
 });
+
 
 
 

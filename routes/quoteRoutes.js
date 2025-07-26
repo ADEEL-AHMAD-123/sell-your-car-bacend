@@ -7,8 +7,7 @@ const {
   submitManualQuote,
   getPendingManualQuotes,
   reviewManualQuote,
-  updateClientDecision,
-  submitCollectionDetails,
+  confirmQuoteWithCollection,
   markAsCollected,
 } = require('../controllers/quoteController');
 
@@ -28,11 +27,9 @@ router.post(
   submitManualQuote
 );
 
-// Accept or reject quote
-router.patch('/client-decision/:id', protect, updateClientDecision);
+// Client confirms quote by submitting collection details (decision + pickup info)
+router.patch("/:id/confirm", protect, confirmQuoteWithCollection);
 
-// Submit collection details after accepting quote
-router.patch('/collection-details/:id', protect, submitCollectionDetails);
 
 // =================== ADMIN ROUTES ===================
 
