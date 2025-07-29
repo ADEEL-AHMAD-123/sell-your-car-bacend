@@ -3,7 +3,9 @@ const Quote = require("../models/Quote");
 const { fetchVehicleData } = require("../utils/dvlaClient");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const sendResponse = require("../utils/sendResponse");
+const sendEmail =require("../utils/emailService")
 const ErrorResponse = require("../utils/errorResponse");
+const buildQueryFilters = require('../utils/queryFilters');
 
 const SCRAP_RATE_PER_KG = parseFloat(process.env.SCRAP_RATE_PER_KG || 0.15);
 
@@ -202,6 +204,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 
 
 
+
 // @desc    Submit a manual quote
 // @route   POST /api/quote/manual-quote
 // @access  Private
@@ -217,21 +220,25 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     message,
     postcode,
     images,
+    revenueWeight,
+    userEstimatedPrice,
   } = req.body;
 
   const userId = req.user?._id;
-  if (!userId) {
+  const userEmail = req.user?.email;
+  const userPhone = req.user?.phone;
+  const userName = `${req.user?.firstName} ${req.user?.lastName}`.trim();
+
+  if (!userId || !userEmail) {
     return next(new ErrorResponse("Unauthorized. Please log in.", 401));
   }
 
-  // === Validate required fields ===
   if (!regNumber || !make || !model || !fuelType || !year) {
     return next(new ErrorResponse("Missing required fields.", 400));
   }
 
   const reg = regNumber.trim().toUpperCase();
 
-  // === Check for existing manual quote ===
   const existingManualQuote = await Quote.findOne({
     userId,
     regNumber: reg,
@@ -239,53 +246,43 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   });
 
   if (existingManualQuote) {
-    // Status: Not reviewed by admin yet
+    const responseData = { manualQuote: existingManualQuote };
+
     if (!existingManualQuote.isReviewedByAdmin) {
       return sendResponse(res, 200, "Manual valuation already requested, pending review", {
-        manualQuote: existingManualQuote,
+        ...responseData,
         status: "manual_pending_review",
       });
     }
 
-    // Status: Reviewed but not yet accepted
     if (
       existingManualQuote.isReviewedByAdmin &&
       !existingManualQuote.isAccepted &&
       !existingManualQuote.isCollected
     ) {
       return sendResponse(res, 200, "Manual valuation already reviewed", {
-        manualQuote: existingManualQuote,
+        ...responseData,
         status: "manual_reviewed",
       });
     }
 
-    // Status: Accepted but vehicle not collected yet
-    if (
-      existingManualQuote.isAccepted &&
-      !existingManualQuote.isCollected
-    ) {
+    if (existingManualQuote.isAccepted && !existingManualQuote.isCollected) {
       return sendResponse(res, 200, "Quote already accepted and collection is pending", {
-        manualQuote: existingManualQuote,
+        ...responseData,
         status: "manual_accepted_pending_collection",
       });
     }
 
-    // Status: Accepted and collected
-    if (
-      existingManualQuote.isAccepted &&
-      existingManualQuote.isCollected
-    ) {
+    if (existingManualQuote.isAccepted && existingManualQuote.isCollected) {
       return sendResponse(res, 200, "This vehicle has already been collected", {
-        manualQuote: existingManualQuote,
+        ...responseData,
         status: "manual_accepted_collected",
       });
     }
   }
 
-  // === Limit images to 6 ===
   const limitedImages = Array.isArray(images) ? images.slice(0, 6) : [];
 
-  // === Create new manual quote ===
   const manualQuoteData = {
     userId,
     regNumber: reg,
@@ -297,13 +294,36 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     mileage,
     message,
     postcode,
+    revenueWeight,
+    userEstimatedPrice,
     images: limitedImages,
     type: "manual",
   };
 
   const savedQuote = await Quote.create(manualQuoteData);
 
-  // === Clean up response ===
+  // === Send confirmation email ===
+  try {
+    await sendEmail({
+      to: userEmail,
+      subject: "We've received your quote request",
+      templateName: "manual-quote-submitted",
+      templateData: {
+        userName,
+        userPhone,
+        regNumber: reg,
+        make,
+        model,
+        year,
+        revenueWeight,
+        userEstimatedPrice,
+
+      },
+    });
+  } catch (emailErr) {
+    console.error("Email failed to send:", emailErr.message);
+  }
+
   const { _id, createdAt, ...safeFields } = savedQuote.toObject();
 
   return sendResponse(res, 200, "Manual quote submitted successfully", {
@@ -317,7 +337,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-
 // @desc Confirm quote with collection details
 // @route PATCH /api/quote/:id/confirm
 // @access Private
@@ -325,47 +344,33 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(async (req, res, next) => 
   const { id } = req.params;
   const { pickupDate, contactNumber, address } = req.body;
 
-  // Check for required fields
+  // 1. Validate input
   if (!pickupDate || !contactNumber || !address) {
-    return next(
-      new ErrorResponse("All collection details are required.", 400)
-    );
+    return next(new ErrorResponse("All collection details are required.", 400));
   }
 
-  // Validate pickupDate is in the future
   const pickupDateObj = new Date(pickupDate);
   if (isNaN(pickupDateObj) || pickupDateObj <= new Date()) {
     return next(new ErrorResponse("Pickup date must be in the future.", 400));
   }
 
-  // Validate contact number (simple format check)
   const phoneRegex = /^[0-9+\-\s()]{7,20}$/;
   if (!phoneRegex.test(contactNumber)) {
     return next(new ErrorResponse("Invalid contact number format.", 400));
   }
 
-  // Find quote
-  const quote = await Quote.findOne({ _id: id, userId: req.user._id });
+  // 2. Find and validate quote
+  const quote = await Quote.findOne({ _id: id, userId: req.user._id }).populate('userId');
+  if (!quote) return next(new ErrorResponse("Quote not found", 404));
 
-  if (!quote) {
-    return next(new ErrorResponse("Quote not found", 404));
-  }
-
-
-  // Prevent re-submission
   if (quote.clientDecision !== "pending") {
-    return next(
-      new ErrorResponse("You have already responded to this quote.", 400)
-    );
+    return next(new ErrorResponse("You have already responded to this quote.", 400));
   }
-
   if (quote.collectionDetails?.pickupDate) {
-    return next(
-      new ErrorResponse("Collection details already submitted.", 400)
-    );
+    return next(new ErrorResponse("Collection details already submitted.", 400));
   }
 
-  // Save collection info
+  // 3. Save collection info
   quote.clientDecision = "accepted";
   quote.collectionDetails = {
     pickupDate: pickupDateObj,
@@ -376,6 +381,53 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(async (req, res, next) => 
 
   await quote.save();
 
+  const client = quote.userId;
+
+  // 4. Send Emails
+
+  // ADMIN EMAIL
+  await sendEmail({
+    to: process.env.ADMIN_EMAIL,
+    subject: `Client Accepted Quote – ${quote.regNumber}`,
+    templateName: "adminQuoteAccepted", // EJS: adminQuoteAccepted.ejs
+    templateData: {
+      quoteType: quote.type,
+      reg: quote.regNumber,
+      make: quote.make || "N/A",
+      model: quote.model || "N/A",
+      weight: quote.revenueWeight || "N/A",
+      price: quote.adminOfferPrice || "N/A",
+      clientName: `${client.firstName} ${client.lastName}`,
+      clientEmail: client.email,
+      clientPhone: client.phone || "N/A",
+      pickupDate: pickupDateObj.toDateString(),
+      address,
+      collectionContact: contactNumber,
+    },
+  });
+
+  // CLIENT EMAIL
+  await sendEmail({
+    to: client.email,
+    subject: "Your Quote Has Been Confirmed",
+    templateName: "clientConfirmation", // EJS: clientConfirmation.ejs
+    templateData: {
+      name: `${client.firstName} ${client.lastName}`,
+      quoteType: quote.type,
+      reg: quote.regNumber,
+      make: quote.make || "N/A",
+      model: quote.model || "N/A",
+      weight: quote.revenueWeight || "N/A",
+      price: quote.adminOfferPrice || "N/A",
+      clientEmail: client.email,
+      clientPhone: client.phone || "N/A",
+      pickupDate: pickupDateObj.toDateString(),
+      address,
+      contactNumber,
+    },
+  });
+
+  // 5. Respond
   sendResponse(res, 200, "Quote accepted and collection details submitted", {
     quote,
   });
@@ -385,18 +437,30 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(async (req, res, next) => 
 
 
 
+ 
 // @desc    Get all pending manual quotes (admin only)
 // @route   GET /api/admin/manual-quotes/pending
 // @access  Admin
 exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
-  const quotes = await Quote.find({
-    type: "manual",
-    adminReviewed: false,
-  })
-    .populate("userId", "firstName lastName email")
-    .sort({ createdAt: -1 });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
-  sendResponse(res, 200, "Pending manual quotes fetched successfully", {
+  const filters = buildQueryFilters(req);
+  filters.isReviewedByAdmin = false;
+
+  const total = await Quote.countDocuments(filters);
+  const quotes = await Quote.find(filters)
+    .populate('userId', 'firstName lastName email')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  sendResponse(res, 200, 'Pending manual quotes fetched successfully', {
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
     quotes,
   });
 });
@@ -407,41 +471,89 @@ exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
 exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
   const { adminOfferPrice, adminMessage } = req.body;
+  console.log("body :",adminOfferPrice, adminMessage )
 
-  const quote = await Quote.findById(id);
-  if (!quote || quote.type !== "manual") {
-    return next(new ErrorResponse("Manual quote not found.", 404));
+  if (!adminOfferPrice || !adminMessage) {
+    return next(new ErrorResponse('Both adminOfferPrice and adminMessage are required.', 400));
   }
 
+  const quote = await Quote.findById(id).populate('userId');
+
+  if (!quote || quote.type !== 'manual') {
+    return next(new ErrorResponse('Manual quote not found.', 404));
+  }
+
+  // Update quote details
   quote.adminOfferPrice = adminOfferPrice;
   quote.adminMessage = adminMessage;
-  quote.adminReviewed = true;
-
+  quote.isReviewedByAdmin = true;
+  quote.reviewedAt = new Date();
   await quote.save();
 
-  // Optional: email user notification here
+  // Send email to user if email exists
+  if (quote.userId && quote.userId.email) {
+    const acceptUrl = `${process.env.FRONTEND_URL}/accept-quote/${quote._id}`;
 
-  sendResponse(res, 200, "Manual quote reviewed successfully", { quote });
+    
+    const clientName = `${quote.userId.firstName} ${quote.userId.lastname}`;
+
+
+
+    await sendEmail({
+      to: quote.userId.email,
+      subject: 'Your Manual Quote Has Been Reviewed',
+      templateName: 'manualQuoteReviewed',
+      templateData: {
+        name: clientName || 'User',
+        regNumber: quote.regNumber,
+        make: quote.make,
+        model: quote.model,
+        year: quote.year,
+        weight: quote.weight || null,
+        clientOfferPrice: quote.clientOfferPrice || null,
+        adminOfferPrice,
+        adminMessage,
+        dashboardLink: `${process.env.FRONTEND_URL}/accept-quote/${quote._id}`,
+      },
+    });
+    
+  }
+
+  sendResponse(res, 200, 'Manual quote reviewed and user notified.', {
+    quote,
+  });
 });
+
+
 
 // @desc    Get all accepted manual quotes (admin only)
 // @route   GET /api/admin/manual-quotes/accepted
 // @access  Admin
 exports.getAcceptedManualQuotes = catchAsyncErrors(async (req, res, next) => {
-  const quotes = await Quote.find({
-    type: "manual",
-    clientDecision: "accepted",
-    "collectionDetails.collected": false,
-  })
-    .populate("userId", "firstName lastName email")
-    .sort({ createdAt: -1 });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
-  sendResponse(res, 200, "Accepted manual quotes fetched", { quotes });
+  const filters = buildQueryFilters(req);
+  filters.clientDecision = 'accepted';
+
+  filters['collectionDetails.collected'] = false;
+
+  const total = await Quote.countDocuments(filters);
+  const quotes = await Quote.find(filters)
+    .populate('userId', 'firstName lastName email')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  sendResponse(res, 200, 'Accepted manual quotes fetched successfully', {
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    quotes,
+  });
 });
-
- 
-
-
 
 // @desc    Mark a quote as collected (admin only)
 // @route   PATCH /api/quote/:id/mark-collected
@@ -450,17 +562,18 @@ exports.markAsCollected = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
 
   const quote = await Quote.findById(id);
-
   if (!quote) {
-    return next(new ErrorResponse('Quote not found', 404));
+    return next(new ErrorResponse('Quote not found.', 404));
   }
 
   if (!quote.collectionDetails || quote.clientDecision !== 'accepted') {
-    return next(new ErrorResponse('Collection details not available or quote not accepted.', 400));
+    return next(
+      new ErrorResponse('Collection details not available or quote not accepted.', 400)
+    );
   }
 
   quote.collectionDetails.collected = true;
   await quote.save();
 
-  sendResponse(res, 200, 'Quote marked as collected', { quote });
+  sendResponse(res, 200, 'Quote marked as collected successfully', { quote });
 });

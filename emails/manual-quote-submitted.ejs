@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manual Quote Received</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        background: #f9f9f9;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        max-width: 600px;
+        margin: auto;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      h2 {
+        color: #222;
+      }
+      p {
+        margin: 10px 0;
+      }
+      .btn {
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 6px;
+        display: inline-block;
+        margin-top: 20px;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Thank you, <%= userName %>!</h2>
+      <p>
+        We’ve received your manual quote request for vehicle <strong><%= regNumber %></strong>.
+      </p>
+
+      <p><strong>Vehicle:</strong> <%= make %> <%= model %> (<%= year %>)</p>
+
+      <% if (typeof revenueWeight !== "undefined") { %>
+        <p><strong>Weight:</strong> <%= revenueWeight %> kg</p>
+      <% } %>
+
+      <% if (typeof userEstimatedPrice !== "undefined") { %>
+        <p><strong>Your Estimated Price:</strong> £<%= userEstimatedPrice %></p>
+      <% } %>
+
+      <p>Our team at SellYourCar.co.uk will review the details and get back to you shortly.</p>
+
+      <a class="btn" href="<%= dashboardLink %>">View Your Quotes</a>
+
+      <footer>
+        &copy; SellYourCar.co.uk. All rights reserved.
+      </footer>
+    </div>
+  </body>
+</html>

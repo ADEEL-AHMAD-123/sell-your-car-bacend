@@ -9,6 +9,7 @@ const {
   reviewManualQuote,
   confirmQuoteWithCollection,
   markAsCollected,
+  getAcceptedManualQuotes
 } = require('../controllers/quoteController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -38,6 +39,9 @@ router.get('/pending-manual', protect, adminOnly, getPendingManualQuotes);
 
 // Review manual quote (approve and assign offer)
 router.patch('/review-manual/:id', protect, adminOnly, reviewManualQuote);
+
+// Get accepted manual quotes
+router.get('/accepted-manual', protect, adminOnly, getAcceptedManualQuotes);
 
 // Mark collection as completed
 router.patch('/collection-status/:id', protect, adminOnly, markAsCollected);

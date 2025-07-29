@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manual Quote Reviewed</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        background: #f4f4f4;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        max-width: 650px;
+        margin: auto;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        color: #2c3e50;
+        margin-top: 0;
+      }
+      p {
+        margin-bottom: 15px;
+        color: #555;
+      }
+      .info-box {
+        background: #f9f9f9;
+        border-left: 4px solid #007bff;
+        padding: 15px 20px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+      .info-box p {
+        margin: 5px 0;
+      }
+      .btn {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 22px;
+        text-decoration: none;
+        border-radius: 6px;
+        display: inline-block;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 12px;
+        color: #aaa;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Your Manual Quote Has Been Reviewed</h2>
+      <p>Hi <%= name %>,</p>
+
+      <p>We've reviewed your manual quote request for the following vehicle:</p>
+
+      <div class="info-box">
+        <p><strong>Registration Number:</strong> <%= regNumber %></p>
+        <p><strong>Make:</strong> <%= make %></p>
+        <p><strong>Model:</strong> <%= model %></p>
+        <p><strong>Year:</strong> <%= year %></p>
+        <% if (weight) { %>
+          <p><strong>Vehicle Weight:</strong> <%= weight %> kg</p>
+        <% } %>
+        <% if (clientOfferPrice) { %>
+          <p><strong>Your Offered Price:</strong> £<%= clientOfferPrice %></p>
+        <% } %>
+      </div>
+
+      <p>Here is the reviewed quote from our admin:</p>
+
+      <div class="info-box">
+        <p><strong>Admin Offer Price:</strong> £<%= adminOfferPrice %></p>
+        <p><strong>Message from Admin:</strong><br /><%= adminMessage %></p>
+      </div>
+
+      <p>If you’re happy with the offer, please click the button below to view and accept your quote.</p>
+
+      <a class="btn" href="<%= dashboardLink %>">View & Accept Quote</a>
+
+      <footer>
+        &copy; SellYourCar.co.uk. All rights reserved.
+      </footer>
+    </div>
+  </body>
+</html>

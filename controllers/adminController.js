@@ -1,6 +1,5 @@
 const User = require("../models/User");
 const Quote = require("../models/Quote");
-const ManualQuote = require("../models/ManualQuote");
 const sendResponse = require("../utils/sendResponse");
 const ErrorResponse = require("../utils/errorResponse");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
