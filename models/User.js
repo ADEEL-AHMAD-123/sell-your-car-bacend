@@ -41,6 +41,13 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 2,
   },
+   // === Field to track the original number of checks ===
+  // Reason: To correctly analyze the distribution of checks left in a multi-tier system.
+  // Benefit: Gives admins a clearer picture of user segments and their usage patterns.
+  originalChecks: {
+    type: Number,
+    default: 2,
+  },
 
   firstLogin: {
     type: Boolean,

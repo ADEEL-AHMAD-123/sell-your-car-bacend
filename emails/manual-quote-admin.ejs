@@ -1,11 +1,10 @@
-
-<!-- 1. adminQuoteAccepted.ejs -->
+<!-- 3. manual-quote-admin.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Accepted Quote - Admin Notification</title>
+    <title>New Manual Quote Request - Admin Review</title>
     <style>
         * {
             margin: 0;
@@ -30,7 +29,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
@@ -51,23 +50,22 @@
             padding: 30px 20px;
         }
         
-        .alert-box {
-            background-color: #28a745;
+        .urgent-alert {
+            background-color: #dc3545;
             color: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             text-align: center;
-            margin-bottom: 30px;
-            font-size: 18px;
+            margin-bottom: 25px;
             font-weight: 600;
         }
         
         .section {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #fd7e14;
         }
         
         .section-title {
@@ -104,14 +102,27 @@
             text-align: right;
         }
         
-        .price-highlight {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        .cta-button {
+            background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
             color: white;
-            font-size: 24px;
-            font-weight: 700;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 600;
+            text-align: center;
+            margin: 20px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .reason-highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
             padding: 15px;
             border-radius: 8px;
-            text-align: center;
+            margin: 15px 0;
         }
         
         .footer {
@@ -120,11 +131,6 @@
             padding: 20px;
             text-align: center;
             font-size: 14px;
-        }
-        
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
         }
         
         @media only screen and (max-width: 600px) {
@@ -139,10 +145,6 @@
             
             .header {
                 padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
             }
             
             .info-row {
@@ -160,79 +162,74 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>🎉 Quote Accepted!</h1>
-            <p>A client has accepted their <%= quoteType %> quote</p>
+            <h1>🔍 Manual Quote Request</h1>
+            <p>Admin Review Required</p>
         </div>
         
         <div class="content">
-            <div class="alert-box">
-                Collection Required - Action Needed
+            <div class="urgent-alert">
+                ⚠️ Manual Quote Review Needed
             </div>
             
             <div class="section">
-                <div class="section-title">💰 Quote Details</div>
-                <div class="price-highlight">
-                    Final Price: £<%= price %>
+                <div class="section-title">👤 Customer Information</div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value"><%= userName %></span>
                 </div>
-                <div style="margin-top: 15px;">
-                    <div class="info-row">
-                        <span class="info-label">Quote Type:</span>
-                        <span class="info-value"><%= quoteType.toUpperCase() %></span>
-                    </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value"><%= userEmail %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value"><%= userPhone %></span>
                 </div>
             </div>
             
             <div class="section">
-                <div class="section-title">🚗 Vehicle Information</div>
+                <div class="section-title">🚗 Vehicle Details</div>
                 <div class="info-row">
                     <span class="info-label">Registration:</span>
-                    <span class="info-value"><%= reg %></span>
+                    <span class="info-value"><%= regNumber %></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Make & Model:</span>
                     <span class="info-value"><%= make %> <%= model %></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Weight:</span>
-                    <span class="info-value"><%= weight %> kg</span>
+                    <span class="info-label">Year:</span>
+                    <span class="info-value"><%= year %></span>
                 </div>
+                <% if (typeof userProvidedWeight !== "undefined" && userProvidedWeight) { %>
+                <div class="info-row">
+                    <span class="info-label">User Provided Weight:</span>
+                    <span class="info-value"><%= userProvidedWeight %> kg</span>
+                </div>
+                <% } %>
             </div>
             
+            <% if (typeof userEstimatedPrice !== "undefined" && userEstimatedPrice) { %>
             <div class="section">
-                <div class="section-title">👤 Client Information</div>
+                <div class="section-title">💰 Price Information</div>
                 <div class="info-row">
-                    <span class="info-label">Name:</span>
-                    <span class="info-value"><%= clientName %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span class="info-value"><%= clientEmail %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Phone:</span>
-                    <span class="info-value"><%= clientPhone %></span>
+                    <span class="info-label">Customer's Estimated Price:</span>
+                    <span class="info-value">£<%= userEstimatedPrice %></span>
                 </div>
             </div>
+            <% } %>
             
-            <div class="section">
-                <div class="section-title">📅 Collection Details</div>
-                <div class="info-row">
-                    <span class="info-label">Pickup Date:</span>
-                    <span class="info-value"><%= pickupDate %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Contact Number:</span>
-                    <span class="info-value"><%= collectionContact %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Address:</span>
-                    <span class="info-value"><%= address %></span>
-                </div>
+            <div class="reason-highlight">
+                <strong>Request Reason:</strong> <%= reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
             </div>
             
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <p style="margin: 0; color: #856404; font-weight: 500;">
-                    <strong>Next Steps:</strong> Please arrange collection with the client and update the system once the vehicle has been collected.
+            <a href="<%= dashboardUrl %>" class="cta-button">
+                📊 Review in Admin Dashboard
+            </a>
+            
+            <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; color: #0d47a1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin: 0;">
+                    <strong>Action Required:</strong> Please review this manual quote request and provide an offer price to the customer within 24-48 hours.
                 </p>
             </div>
         </div>

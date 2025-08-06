@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Settings = require('../models/Settings'); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
@@ -33,12 +34,17 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  
+  // Fetch the default checks from the settings model
+  const settings = await Settings.findOne() || await Settings.create({});
 
   const user = await User.create({
     firstName,
     lastName,
     email,
     password: hashedPassword,
+    checksLeft: settings.defaultChecks,       // Set initial checks from settings
+    originalChecks: settings.defaultChecks,  // Record the original number of checks
   });
 
   const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -53,8 +59,8 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
       lastName: user.lastName,
       email: user.email,
       checksLeft: user.checksLeft,
+      originalChecks: user.originalChecks, 
       firstLogin: user.firstLogin,
-
     },
   });
 });
@@ -90,6 +96,7 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
       lastName: user.lastName,
       email: user.email,
       checksLeft: user.checksLeft,
+      originalChecks: user.originalChecks, // Include the new field in the response
       firstLogin: user.firstLogin,
       role: user.role,
     },

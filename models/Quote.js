@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 
 const quoteSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-
-  // Vehicle details
+  
+  // Vehicle details (from DVLA)
   regNumber: { type: String, required: true },
   make: String,
   model: String,
@@ -19,29 +19,41 @@ const quoteSchema = new mongoose.Schema({
   motStatus: String,
   euroStatus: String,
   realDrivingEmissions: String,
+  typeApproval: String,
+  markedForExport: Boolean,
+  artEndDate: String,
+  taxDueDate: String,
+  monthOfFirstRegistration: String,
+  yearOfManufacture: String,
+  dateOfLastV5CIssued: String,
+  dvlaFetchedAt: Date,
+  lastUpdatedAt: Date,
 
-  // Manual quote specific
-  condition: String,
-  mileage: Number,
-  postcode: String,
+  // Manual inputs from user
   images: [String],
   userEstimatedPrice: Number,
+  userProvidedWeight: Number,
   message: String,
+  manualQuoteReason: String,
 
   // Quote type
   type: {
     type: String,
     enum: ['auto', 'manual'],
     required: true,
+    default: 'auto',
   },
 
   estimatedScrapPrice: Number,
 
-  // Admin fields
+  // Admin review
   adminOfferPrice: Number,
   adminMessage: String,
   isReviewedByAdmin: { type: Boolean, default: false },
   reviewedAt: Date,
+  
+
+  finalPrice: Number,
 
   clientDecision: {
     type: String,
@@ -60,9 +72,12 @@ const quoteSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  lastManualRequestAt: Date,
+}, {
+  timestamps: true,
 });
 
-// Prevent duplicate quotes for same user & regNumber
+// Prevent duplicate quotes per user/reg
 quoteSchema.index(
   { regNumber: 1, userId: 1 },
   { unique: true, partialFilterExpression: { regNumber: { $exists: true, $ne: null } } }

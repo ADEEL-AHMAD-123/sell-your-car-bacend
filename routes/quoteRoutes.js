@@ -9,7 +9,8 @@ const {
   reviewManualQuote,
   confirmQuoteWithCollection,
   markAsCollected,
-  getAcceptedManualQuotes
+  getAcceptedQuotes,
+  rejectQuote
 } = require('../controllers/quoteController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -32,6 +33,10 @@ router.post(
 router.patch("/:id/confirm", protect, confirmQuoteWithCollection);
 
 
+// Client rejects a reviewed quote offer
+router.patch('/quote/:id/reject', protect, rejectQuote);
+
+
 // =================== ADMIN ROUTES ===================
 
 // Get all pending manual quote requests
@@ -40,10 +45,12 @@ router.get('/pending-manual', protect, adminOnly, getPendingManualQuotes);
 // Review manual quote (approve and assign offer)
 router.patch('/review-manual/:id', protect, adminOnly, reviewManualQuote);
 
-// Get accepted manual quotes
-router.get('/accepted-manual', protect, adminOnly, getAcceptedManualQuotes);
+// Get All accepted quotes(manual and auto both)
+router.get('/accepted', protect, adminOnly, getAcceptedQuotes);
 
 // Mark collection as completed
 router.patch('/collection-status/:id', protect, adminOnly, markAsCollected);
+
+
 
 module.exports = router;

@@ -1,10 +1,10 @@
-<!-- 2. clientConfirmation.ejs -->
+<!-- quoteConfirmation.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quote Confirmation - SellYourCar.co.uk</title>
+    <title>Quote Confirmed - Collection Scheduled | SellYourCar.co.uk</title>
     <style>
         * {
             margin: 0;
@@ -118,26 +118,62 @@
             margin: 15px 0;
         }
         
-        .next-steps {
-            background-color: #e3f2fd;
-            border: 1px solid #bbdefb;
-            color: #0d47a1;
+        .collection-alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
             padding: 20px;
             border-radius: 8px;
             margin-top: 25px;
         }
         
-        .next-steps h3 {
+        .collection-alert h3 {
             font-size: 18px;
             margin-bottom: 10px;
+            color: #856404;
         }
         
-        .next-steps ul {
+        .collection-alert ul {
             margin-left: 20px;
         }
         
-        .next-steps li {
+        .collection-alert li {
             margin-bottom: 5px;
+        }
+        
+        .timeline {
+            margin: 25px 0;
+        }
+        
+        .timeline h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .timeline-icon {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 15px;
+            flex-shrink: 0;
         }
         
         .footer {
@@ -195,6 +231,7 @@
             
             .timeline-icon {
                 margin-bottom: 10px;
+                margin-right: 0;
             }
         }
     </style>
@@ -202,79 +239,121 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>📝 Request Received!</h1>
-            <p>Thank you <%= userName %>, we're reviewing your manual quote</p>
+            <h1>✅ Quote Confirmed!</h1>
+            <p>Collection scheduled for <%= name %></p>
         </div>
         
         <div class="content">
-            <div class="confirmation-box">
-                <h2>✅ Manual Quote Request Submitted</h2>
-                <p>We've successfully received your manual valuation request and our expert team will review it shortly.</p>
+            <div class="success-message">
+                <h2>🎉 Congratulations!</h2>
+                <p>Your quote has been confirmed and collection has been scheduled. We'll be in touch soon to finalize the details.</p>
             </div>
             
             <div class="section">
                 <div class="section-title">🚗 Vehicle Details</div>
                 <div class="info-row">
                     <span class="info-label">Registration:</span>
-                    <span class="info-value"><%= regNumber %></span>
+                    <span class="info-value"><%= reg %></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Make & Model:</span>
                     <span class="info-value"><%= make %> <%= model %></span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Year:</span>
-                    <span class="info-value"><%= year %></span>
-                </div>
-                <% if (typeof userProvidedWeight !== "undefined" && userProvidedWeight) { %>
+                <% if (typeof weight !== "undefined" && weight !== "N/A") { %>
                 <div class="info-row">
                     <span class="info-label">Vehicle Weight:</span>
-                    <span class="info-value"><%= userProvidedWeight %> kg</span>
+                    <span class="info-value"><%= weight %> kg</span>
                 </div>
                 <% } %>
-                <% if (typeof userEstimatedPrice !== "undefined" && userEstimatedPrice) { %>
                 <div class="info-row">
-                    <span class="info-label">Your Estimated Price:</span>
-                    <span class="info-value">£<%= userEstimatedPrice %></span>
+                    <span class="info-label">Quote Type:</span>
+                    <span class="info-value"><%= quoteType === 'manual' ? 'Manual Assessment' : 'Instant Quote' %></span>
+                </div>
+            </div>
+            
+            <div class="price-highlight">
+                Final Offer: £<%= price %>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📅 Collection Details</div>
+                <div class="info-row">
+                    <span class="info-label">Pickup Date:</span>
+                    <span class="info-value"><%= pickupDate %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Collection Address:</span>
+                    <span class="info-value"><%= address %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact Number:</span>
+                    <span class="info-value"><%= contactNumber %></span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">👤 Your Contact Information</div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value"><%= name %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value"><%= clientEmail %></span>
+                </div>
+                <% if (typeof clientPhone !== "undefined" && clientPhone !== "N/A") { %>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value"><%= clientPhone %></span>
                 </div>
                 <% } %>
             </div>
             
             <div class="timeline">
-                <h3>📅 What Happens Next?</h3>
+                <h3>📋 What Happens Next?</h3>
                 <div class="timeline-item">
                     <div class="timeline-icon">1</div>
                     <div>
-                        <strong>Expert Review (24-48 hours)</strong><br>
-                        Our team will carefully assess your vehicle details
+                        <strong>Collection Confirmation (24-48 hours)</strong><br>
+                        Our collection team will contact you to confirm the pickup details and time slot
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-icon">2</div>
                     <div>
-                        <strong>Quote Preparation</strong><br>
-                        We'll prepare a personalized quote based on current market conditions
+                        <strong>Vehicle Collection</strong><br>
+                        On your scheduled date, our team will arrive to collect your vehicle
                     </div>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-icon">3</div>
                     <div>
-                        <strong>Quote Delivery</strong><br>
-                        You'll receive an email with your custom quote and next steps
+                        <strong>Payment Processing</strong><br>
+                        Payment will be processed immediately upon successful collection
                     </div>
                 </div>
             </div>
             
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px;">
-                <p style="margin: 0; color: #856404;">
-                    <strong>📞 Need to speak with us?</strong> Our customer service team is available Monday-Friday, 9am-5pm. Reply to this email or call us directly.
+            <div class="collection-alert">
+                <h3>📋 Important Collection Information</h3>
+                <ul>
+                    <li><strong>Please ensure you have:</strong> Vehicle registration documents and keys ready</li>
+                    <li><strong>Contact availability:</strong> Be available on <%= contactNumber %> on collection day</li>
+                    <li><strong>Access:</strong> Ensure the vehicle is accessible at the specified address</li>
+                    <li><strong>Cancellation:</strong> If you need to reschedule, contact us at least 24 hours in advance</li>
+                </ul>
+            </div>
+            
+            <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; padding: 20px; border-radius: 8px; margin-top: 25px;">
+                <p style="margin: 0; color: #0d47a1;">
+                    <strong>📞 Questions or concerns?</strong> Our customer service team is here to help! Contact us at support@sellyourcar.co.uk or reply to this email. We're available Monday-Friday, 9am-5pm.
                 </p>
             </div>
         </div>
         
         <div class="footer">
             <div class="logo">SellYourCar.co.uk</div>
-            <p>Thank you for choosing our manual valuation service</p>
+            <p>Thank you for choosing our vehicle collection service</p>
             <p>Customer Service: support@sellyourcar.co.uk</p>
             <p>&copy; <%= new Date().getFullYear() %> SellYourCar.co.uk. All rights reserved.</p>
 

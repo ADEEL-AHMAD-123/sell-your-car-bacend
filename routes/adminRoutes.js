@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getAllUsers,
-  searchUsers,
-  getPaginatedUsers,
+  getUsers,
+  getUser, 
   updateUser,
   deleteUser,
-  getUserQuotes,
-  getAdminStats,
-  getDailyQuoteAnalytics,
- 
+  getAnalyticsOverview,
+  getSettings,
+  updateSettings,
+  refillUserChecks
 } = require('../controllers/adminController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -18,18 +17,16 @@ const { protect, adminOnly } = require('../middlewares/authMiddleware');
 router.use(protect, adminOnly);
 
 // Users
-router.get('/users', getAllUsers);
-router.get('/users/search', searchUsers);
-router.get('/users/paginated', getPaginatedUsers);
-router.put('/user/:id', updateUser);
-router.delete('/user/:id', deleteUser);
-
-// Quotes
-router.get('/quotes/:userId', getUserQuotes);
-
-
+router.get('/users', getUsers);
+router.get('/users/:id', getUser); 
+router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
+router.patch('/users/:id/refill-checks', refillUserChecks);
 // Analytics
-router.get('/stats', getAdminStats);
-router.get('/analytics/daily-quotes', getDailyQuoteAnalytics);
+router.get('/analytics/overview', getAnalyticsOverview);
+
+// Settings
+router.get('/settings', getSettings);
+router.put('/settings', updateSettings);
 
 module.exports = router;

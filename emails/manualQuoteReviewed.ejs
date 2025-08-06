@@ -1,97 +1,455 @@
+<!-- 5. manualQuoteReviewed.ejs -->
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Manual Quote Reviewed</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Manual Quote is Ready - SellYourCar.co.uk</title>
     <style>
-      body {
-        font-family: 'Arial', sans-serif;
-        line-height: 1.6;
-        background: #f4f4f4;
-        padding: 20px;
-        color: #333;
-      }
-      .container {
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        max-width: 650px;
-        margin: auto;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-      h2 {
-        color: #2c3e50;
-        margin-top: 0;
-      }
-      p {
-        margin-bottom: 15px;
-        color: #555;
-      }
-      .info-box {
-        background: #f9f9f9;
-        border-left: 4px solid #007bff;
-        padding: 15px 20px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-      }
-      .info-box p {
-        margin: 5px 0;
-      }
-      .btn {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 22px;
-        text-decoration: none;
-        border-radius: 6px;
-        display: inline-block;
-        font-weight: bold;
-        margin-top: 20px;
-      }
-      .btn:hover {
-        background-color: #0056b3;
-      }
-      footer {
-        margin-top: 40px;
-        font-size: 12px;
-        color: #aaa;
-        text-align: center;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px 20px;
+        }
+        
+        .quote-ready {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .quote-ready h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        
+        .price-card {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+        }
+        
+        .price-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .price-card .price {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .price-card p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666666;
+            flex: 1;
+        }
+        
+        .info-value {
+            font-weight: 500;
+            color: #333333;
+            flex: 2;
+            text-align: right;
+        }
+        
+        .admin-message {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #0d47a1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .admin-message h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #1565c0;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 18px 35px;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            text-align: center;
+            margin: 25px 0;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        
+        .comparison-section {
+            background-color: #fff8dc;
+            border: 1px solid #ffd700;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .comparison-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        .footer .logo {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .footer p {
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .price-card .price {
+                font-size: 28px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .info-value {
+                text-align: left;
+            }
+            
+            .comparison-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>Your Manual Quote Has Been Reviewed</h2>
-      <p>Hi <%= name %>,</p>
-
-      <p>We've reviewed your manual quote request for the following vehicle:</p>
-
-      <div class="info-box">
-        <p><strong>Registration Number:</strong> <%= regNumber %></p>
-        <p><strong>Make:</strong> <%= make %></p>
-        <p><strong>Model:</strong> <%= model %></p>
-        <p><strong>Year:</strong> <%= year %></p>
-        <% if (weight) { %>
-          <p><strong>Vehicle Weight:</strong> <%= weight %> kg</p>
-        <% } %>
-        <% if (clientOfferPrice) { %>
-          <p><strong>Your Offered Price:</strong> £<%= clientOfferPrice %></p>
-        <% } %>
-      </div>
-
-      <p>Here is the reviewed quote from our admin:</p>
-
-      <div class="info-box">
-        <p><strong>Admin Offer Price:</strong> £<%= adminOfferPrice %></p>
-        <p><strong>Message from Admin:</strong><br /><%= adminMessage %></p>
-      </div>
-
-      <p>If you’re happy with the offer, please click the button below to view and accept your quote.</p>
-
-      <a class="btn" href="<%= dashboardLink %>">View & Accept Quote</a>
-
-      <footer>
-        &copy; SellYourCar.co.uk. All rights reserved.
-      </footer>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎯 Your Quote is Ready!</h1>
+            <p>Hi <%= name %>, we've completed your manual valuation</p>
+        </div>
+        
+        <div class="content">
+            <div class="quote-ready">
+                <h2>✅ Manual Valuation Complete</h2>
+                <p>Our expert team has reviewed your vehicle details and prepared a personalized quote for you.</p>
+            </div>
+            
+            <div class="price-card">
+                <h3>Our Professional Valuation</h3>
+                <div class="price">£<%= adminOfferPrice %></div>
+                <p>Based on current market conditions and vehicle assessment</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🚗 Vehicle Summary</div>
+                <div class="info-row">
+                    <span class="info-label">Registration:</span>
+                    <span class="info-value"><%= regNumber %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Make & Model:</span>
+                    <span class="info-value"><%= make %> <%= model %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Year:</span>
+                    <span class="info-value"><%= year %></span>
+                </div>
+                <% if (weight) { %>
+                <div class="info-row">
+                    <span class="info-label">Vehicle Weight:</span>
+                    <span class="info-value"><%= weight %> kg</span>
+                </div>
+                <% } %>
+            </div>
+            
+            <% if (userEstimatedPrice) { %>
+            <div class="comparison-section">
+                <h4 style="margin-bottom: 15px; color: #b8860b;">💰 Price Comparison</h4>
+                <div class="comparison-row">
+                    <span><strong>Your Estimated Price:</strong></span>
+                    <span>£<%= userEstimatedPrice %></span>
+                </div>
+                <div class="comparison-row">
+                    <span><strong>Our Professional Valuation:</strong></span>
+                    <span style="color: #6f42c1; font-weight: 700;">£<%= adminOfferPrice %></span>
+                </div>
+            </div>
+            <% } %>
+            
+            <div class="admin-message">
+                <h4>📝 Message from Our Valuation Team:</h4>
+                <p><%= adminMessage %></p>
+            </div>
+            
+            <a href="<%= dashboardLink %>" class="cta-button">
+                ✅ Accept Quote & Arrange Collection
+            </a>
+            
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-top: 25px;">
+                <h4 style="margin-bottom: 10px; color: #856404;">⏰ Important Information</h4>
+                <ul style="margin-left: 20px; color: #856404;">
+                    <li>This quote is valid for 7 days from the date of this email</li>
+                    <li>Click the button above to accept and schedule collection</li>
+                    <li>Our team will contact you within 24 hours of acceptance</li>
+                    <li>Payment is processed upon successful vehicle collection</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+                <p style="margin: 0; color: #666666;">
+                    <strong>Questions about your quote?</strong><br>
+                    Reply to this email or contact our customer service team.<br>
+                    We're here to help make your vehicle sale as smooth as possible.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="logo">SellYourCar.co.uk</div>
+            <p>Professional vehicle valuations you can trust</p>
+            <p>Customer Service: support@sellyourcar.co.uk</p>
+            <p>&copy; 2024 SellYourCar.co.uk. All rights reserved.</p>
+        </div>
     </div>
-  </body>
+</body>
+</html> 0.8;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .info-value {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>✅ Quote Confirmed!</h1>
+            <p>Thank you <%= name %>, your vehicle collection is scheduled</p>
+        </div>
+        
+        <div class="content">
+            <div class="success-message">
+                <h2>🎉 Congratulations!</h2>
+                <p>Your <strong><%= quoteType %></strong> quote has been successfully confirmed. We'll be in touch soon to arrange collection.</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">💰 Confirmed Quote</div>
+                <div class="price-highlight">
+                    You'll Receive: £<%= price %>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Quote Type:</span>
+                    <span class="info-value"><%= quoteType.toUpperCase() %></span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🚗 Vehicle Details</div>
+                <div class="info-row">
+                    <span class="info-label">Registration:</span>
+                    <span class="info-value"><%= reg %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Make & Model:</span>
+                    <span class="info-value"><%= make %> <%= model %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Weight:</span>
+                    <span class="info-value"><%= weight %> kg</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📅 Collection Information</div>
+                <div class="info-row">
+                    <span class="info-label">Pickup Date:</span>
+                    <span class="info-value"><%= pickupDate %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact Number:</span>
+                    <span class="info-value"><%= contactNumber %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Collection Address:</span>
+                    <span class="info-value"><%= address %></span>
+                </div>
+            </div>
+            
+            <div class="next-steps">
+                <h3>📋 What Happens Next?</h3>
+                <ul>
+                    <li>Our team will contact you 24-48 hours before collection</li>
+                    <li>Ensure your vehicle is accessible on the scheduled date</li>
+                    <li>Have your V5C (log book) and keys ready</li>
+                    <li>Payment will be processed upon successful collection</li>
+                </ul>
+            </div>
+            
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin: 0; color: #856404;">
+                    <strong>Questions?</strong> Feel free to reply to this email or contact our customer service team.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="logo">SellYourCar.co.uk</div>
+            <p>Thank you for choosing us for your vehicle sale</p>
+            <p>Customer Service: support@sellyourcar.co.uk</p>
+            <p>&copy; <%= new Date().getFullYear() %> SellYourCar.co.uk. All rights reserved.</p>
+
+        </div>
+    </div>
+</body>
 </html>
