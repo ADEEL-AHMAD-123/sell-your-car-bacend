@@ -8,7 +8,8 @@ const {
   getAnalyticsOverview,
   getSettings,
   updateSettings,
-  refillUserChecks
+  refillUserChecks,
+  searchQuotesByAdmin
 } = require('../controllers/adminController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -28,5 +29,8 @@ router.get('/analytics/overview', getAnalyticsOverview);
 // Settings
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+
+router.get('/quotes/search', searchQuotesByAdmin); 
+
 
 module.exports = router;

@@ -162,10 +162,6 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-
-
-
-
 // @desc    Submit a manual quote
 // @route   POST /api/quote/manual-quote
 // @access  Private
@@ -203,8 +199,11 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   const existingQuote = await Quote.findOne({ userId, regNumber: reg });
 
   if (!existingQuote) {
+    // If no existing quote (auto or manual) is found, it means the user is trying
+    // to submit a manual quote for a vehicle that hasn't gone through the auto-quote flow.
+    // This scenario should ideally be handled by first generating an auto quote.
     return next(
-      new ErrorResponse("No existing quote found for this vehicle.", 404)
+      new ErrorResponse("No existing quote found for this vehicle. Please generate an auto-quote first.", 404)
     );
   }
 
@@ -215,32 +214,34 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     collected,
   } = existingQuote;
 
-  // === Step 2: Handle known cases ===
-  if (type === "auto" && clientDecision === "accepted" && collected) {
-    return sendResponse(
-      res,
-      400,
-      "Auto quote already accepted and collected.",
-      {
+  // === Step 2: Handle known cases and prevent further updates if the quote is in a state that disallows new manual requests ===
+
+  // Priority 1: Handle accepted/collected states first, as these are terminal states.
+  if (clientDecision === "accepted") {
+    if (collected) {
+      // Both auto and manual accepted and collected quotes are final.
+      return sendResponse(res, 400, `Quote already accepted and collected for this vehicle.`, {
         quote: existingQuote,
-        status: "auto_accepted_collected",
-      }
-    );
+        status: type === "auto" ? "auto_accepted_collected" : "manual_accepted_collected",
+      });
+    } else {
+      // Both auto and manual accepted but not yet collected quotes are also final for new manual requests.
+      return sendResponse(res, 400, `Quote already accepted for this vehicle. Pending collection.`, {
+        quote: existingQuote,
+        status: type === "auto" ? "auto_accepted_not_collected" : "manual_accepted_pending_collection",
+      });
+    }
   }
 
-  if (type === "auto" && clientDecision === "accepted" && !collected) {
-    return sendResponse(res, 400, "Auto quote already accepted.", {
-      quote: existingQuote,
-      status: "auto_accepted_not_collected",
-    });
-  }
-
+  // Priority 2: Handle manual quotes that are pending review or reviewed.
+  // This ensures that if a manual quote is already in progress, a new manual request isn't processed.
   if (type === "manual") {
-    if (existingQuote && !isReviewedByAdmin && !clientDecision) {
+    if (!isReviewedByAdmin && clientDecision === "pending") {
+      // Manual quote already requested, pending admin review.
       return sendResponse(
         res,
         200,
-        "Manual quote already requested, pending review.",
+        "Your manual quote request is already pending admin review. No further changes can be submitted at this time.",
         {
           quote: existingQuote,
           status: "manual_pending_review",
@@ -248,51 +249,43 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
       );
     }
 
-    if (isReviewedByAdmin && !clientDecision) {
+    if (isReviewedByAdmin && clientDecision === "pending") {
+      // Manual quote reviewed by admin, awaiting client decision.
       return sendResponse(
         res,
         200,
-        "Manual quote reviewed, awaiting client decision.",
+        "Your manual quote has been reviewed and is awaiting your decision. No further changes can be submitted at this time.",
         {
           quote: existingQuote,
           status: "manual_reviewed",
         }
       );
     }
-
-    if (clientDecision === "accepted" && !collected) {
-      return sendResponse(
-        res,
-        200,
-        "Manual quote accepted, pending collection.",
-        {
-          quote: existingQuote,
-          status: "manual_accepted_pending_collection",
-        }
-      );
-    }
-
-    if (clientDecision === "accepted" && collected) {
-      return sendResponse(res, 400, "Manual quote accepted and collected.", {
-        quote: existingQuote,
-        status: "manual_accepted_collected",
-      });
-    }
+    // If a manual quote was rejected, it would fall through to Step 3 to allow re-submission/update.
+    // The `clientDecision` would be 'rejected' in that case, so the above `pending` checks wouldn't match.
   }
 
   // === Step 3: Update manual fields ===
+  // This section will only be reached if:
+  // 1. An auto quote exists and is NOT accepted/collected.
+  // 2. A manual quote exists and was previously rejected (allowing re-submission/update).
+
+  // Only update fields if they are not already present (for initial population from manual input)
+  // or if a new message/images are provided.
+  // Note: If the user provides `make`, `model`, etc., they will only be updated if the existing quote
+  // does NOT already have these fields populated (e.g., from DVLA data).
   if (!existingQuote.make && make) existingQuote.make = make;
   if (!existingQuote.model && model) existingQuote.model = model;
   if (!existingQuote.fuelType && fuelType) existingQuote.fuelType = fuelType;
   if (!existingQuote.year && year) existingQuote.year = year;
-  if (!existingQuote.wheelPlan && wheelPlan)
-    existingQuote.wheelPlan = wheelPlan;
+  if (!existingQuote.wheelPlan && wheelPlan) existingQuote.wheelPlan = wheelPlan;
 
   if (message) existingQuote.message = message;
 
   if (Array.isArray(req.files) && req.files.length > 0) {
     const uploadedImages = req.files.map(file => file.path);
-    existingQuote.images = uploadedImages.slice(0, 6);
+    // Ensure we don't exceed 6 images, append new ones
+    existingQuote.images = [...(existingQuote.images || []), ...uploadedImages].slice(0, 6);
   }
 
   if (userEstimatedPrice !== undefined)
@@ -300,21 +293,27 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   if (userProvidedWeight !== undefined)
     existingQuote.userProvidedWeight = userProvidedWeight;
 
-  // === Step 4: Automatically determine manualQuoteReason ===
+  // === Step 4: Automatically determine manualQuoteReason and set type to manual ===
   let resolvedReason = "user_requested_review";
 
   if (!existingQuote.estimatedScrapPrice) {
     resolvedReason = "auto_price_missing";
   } else if (
     typeof userEstimatedPrice === "number" &&
+    existingQuote.estimatedScrapPrice !== null && // Ensure estimatedScrapPrice is not null before comparison
     userEstimatedPrice > existingQuote.estimatedScrapPrice
   ) {
     resolvedReason = "user_thinks_value_higher";
   }
 
   existingQuote.manualQuoteReason = resolvedReason;
-  existingQuote.type = "manual";
+  existingQuote.type = "manual"; // Explicitly set to manual as it's now a manual request
   existingQuote.lastManualRequestAt = new Date();
+  existingQuote.isReviewedByAdmin = false; // Reset admin review status for new manual request
+  existingQuote.clientDecision = "pending"; // Reset client decision to pending for new manual request
+  existingQuote.adminOfferPrice = undefined; // Clear previous admin offer
+  existingQuote.adminMessage = undefined; // Clear previous admin message
+  existingQuote.rejectionReason = undefined; // Clear previous rejection reason if re-submitting
 
   await existingQuote.save(); // Mongoose will automatically update the `updatedAt` timestamp here.
 
@@ -374,7 +373,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     status: "manual_info_appended",
   });
 });
-
 
 
 
@@ -608,11 +606,17 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Manual quote not found.", 404));
   }
 
+  // === Added check: Ensure quote is still pending client decision and not already reviewed ===
+  if (quote.clientDecision !== "pending" || quote.isReviewedByAdmin) {
+    return next(new ErrorResponse("This manual quote has already been reviewed or a decision has been made.", 400));
+  }
+
   // Update quote details
   quote.adminOfferPrice = adminOfferPrice;
   quote.adminMessage = adminMessage;
   quote.isReviewedByAdmin = true;
   quote.reviewedAt = new Date();
+  quote.finalPrice = adminOfferPrice; // Set final price when admin reviews a manual quote
   await quote.save();
 
   // Send email to user if email exists
@@ -803,11 +807,6 @@ exports.markAsCollected = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-
-
-
-
-
 // @desc    Client rejects a reviewed quote offer
 // @route   PATCH /api/quote/:id/reject
 // @access  Private
@@ -850,4 +849,3 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
 
   sendResponse(res, 200, "Quote successfully rejected.", { quote });
 });
-

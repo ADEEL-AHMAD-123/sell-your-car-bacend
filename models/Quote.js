@@ -27,7 +27,7 @@ const quoteSchema = new mongoose.Schema({
   yearOfManufacture: String,
   dateOfLastV5CIssued: String,
   dvlaFetchedAt: Date,
-  lastUpdatedAt: Date,
+
 
   // Manual inputs from user
   images: [String],
@@ -52,8 +52,10 @@ const quoteSchema = new mongoose.Schema({
   isReviewedByAdmin: { type: Boolean, default: false },
   reviewedAt: Date,
   
-
   finalPrice: Number,
+  
+
+  rejectionReason: String,
 
   clientDecision: {
     type: String,
@@ -68,13 +70,10 @@ const quoteSchema = new mongoose.Schema({
     collected: { type: Boolean, default: false },
   },
 
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  lastManualRequestAt: Date,
+
+  lastManualRequestAt: Date, 
 }, {
-  timestamps: true,
+  timestamps: true, 
 });
 
 // Prevent duplicate quotes per user/reg

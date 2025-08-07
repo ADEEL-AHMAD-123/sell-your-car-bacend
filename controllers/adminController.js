@@ -5,7 +5,7 @@ const sendResponse = require("../utils/sendResponse");
 const ErrorResponse = require("../utils/errorResponse");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const Settings = require('../models/Settings');
-
+const mongoose =require("mongoose");
 
 /**
  * @desc    Get all users (for admin view) with pagination, filtering, searching, and sorting
@@ -456,3 +456,67 @@ exports.updateSettings = catchAsyncErrors(async (req, res, next) => {
 });
 
 
+// @desc    Search quotes by admin
+// @route   GET /api/admin/quotes/search
+// @access  Admin
+exports.searchQuotesByAdmin = catchAsyncErrors(async (req, res, next) => {
+  const { quoteId, clientEmail, username, regNumber } = req.query;
+
+  // At least one search parameter is required
+  if (!quoteId && !clientEmail && !username && !regNumber) {
+    return next(new ErrorResponse("Please provide at least one search criterion (Quote ID, Client Email, Username, or Reg Number).", 400));
+  }
+
+  const queryConditions = [];
+  let userIds = [];
+
+  // Search by Quote ID (exact match)
+  if (quoteId) {
+    if (!mongoose.Types.ObjectId.isValid(quoteId)) {
+      return next(new ErrorResponse("Invalid Quote ID format. Must be a valid MongoDB ObjectId.", 400));
+    }
+    // If quoteId is provided, it's an exact match and takes precedence
+    const quote = await Quote.findById(quoteId).populate('userId');
+    if (quote) {
+      return sendResponse(res, 200, "Quote found successfully.", { quotes: [quote] });
+    } else {
+      return sendResponse(res, 200, "No quote found with the provided ID.", { quotes: [] });
+    }
+  }
+
+  // Search by Client Email or Username (requires finding user IDs first)
+  if (clientEmail || username) {
+    const userQuery = {};
+    if (clientEmail) {
+      userQuery.email = { $regex: clientEmail, $options: 'i' };
+    }
+    if (username) {
+      // Searches against firstName or lastName
+      userQuery.$or = [
+        { firstName: { $regex: username, $options: 'i' } },
+        { lastName: { $regex: username, $options: 'i' } }
+      ];
+    }
+    
+    const users = await User.find(userQuery).select('_id');
+    if (users.length > 0) {
+      userIds = users.map(user => user._id);
+      queryConditions.push({ userId: { $in: userIds } });
+    } else {
+      // If no users found for email/username, no quotes will match
+      return sendResponse(res, 200, "No quotes found matching the provided criteria.", { quotes: [] });
+    }
+  }
+
+  // Search by Reg Number (case-insensitive partial match)
+  if (regNumber) {
+    queryConditions.push({ regNumber: { $regex: regNumber, $options: 'i' } });
+  }
+
+  // Combine conditions using $and for multiple criteria (excluding quoteId, which is handled above)
+  const finalQuery = queryConditions.length > 0 ? { $and: queryConditions } : {};
+
+  const quotes = await Quote.find(finalQuery).populate('userId');
+
+  sendResponse(res, 200, "Quotes fetched successfully.", { quotes });
+});
