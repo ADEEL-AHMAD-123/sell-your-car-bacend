@@ -812,40 +812,62 @@ exports.markAsCollected = catchAsyncErrors(async (req, res, next) => {
 // @access  Private
 exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
-  const { rejectionReason } = req.body; // Destructure the rejectionReason from the body
+  const { rejectionReason } = req.body;
 
-  // Find the quote for the logged-in user
+  // Find the quote for the logged-in user and POPULATE the userId
   const quote = await Quote.findOne({
     _id: id,
     userId: req.user._id,
-  });
+  }).populate("userId");
 
   if (!quote) {
     return next(new ErrorResponse("Quote not found.", 404));
   }
   
-  // New validation: Only manual quotes can be rejected
   if (quote.type !== 'manual') {
     return next(new ErrorResponse("Only manual quotes can be rejected by the client.", 400));
   }
   
-  // New validation: A rejection reason is required
   if (!rejectionReason || rejectionReason.trim() === '') {
     return next(new ErrorResponse("A reason for rejection is required.", 400));
   }
 
-  // Check if the quote is in a state where it can be rejected
   if (quote.clientDecision !== "pending" || !quote.isReviewedByAdmin) {
     return next(new ErrorResponse("This quote cannot be rejected.", 400));
   }
 
-  // Update the clientDecision field and store the reason
   quote.clientDecision = "rejected";
-  quote.rejectionReason = rejectionReason; // Save the rejection reason to the document
+  quote.rejectionReason = rejectionReason;
   await quote.save();
 
-  // later we will send an email to the admin here to notify them
-  // that a manual quote offer was rejected.
+
+
+  const client = quote.userId;
+  const price = quote.adminOfferPrice || quote.estimatedScrapPrice; 
+
+  try {
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: `❌ Quote Rejected - ${quote.regNumber}`,
+      templateName: "adminQuoteRejected",
+      templateData: {
+        quoteType: quote.type,
+        reg: quote.regNumber,
+        make: quote.make || "N/A",
+        model: quote.model || "N/A",
+        weight: quote.revenueWeight || "N/A",
+        price: price || "0",
+        rejectionReason: quote.rejectionReason,
+        clientName: `${client.firstName} ${client.lastName}`,
+        clientEmail: client.email,
+        clientPhone: client.phone || "N/A",
+      },
+    });
+  } catch (emailError) {
+    console.error("Failed to send rejection email:", emailError.message);
+    // Continue with the response even if the email fails
+  }
 
   sendResponse(res, 200, "Quote successfully rejected.", { quote });
 });
+

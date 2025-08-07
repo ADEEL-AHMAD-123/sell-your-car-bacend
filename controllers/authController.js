@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const Settings = require('../models/Settings'); 
+const Settings = require('../models/Settings');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
@@ -17,14 +17,16 @@ const getCookieOptions = () => ({
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'Lax',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-}); 
+});
 
 // -------------------- Register --------------------
 
 exports.register = catchAsyncErrors(async (req, res, next) => {
-  const { firstName, lastName, email, password } = req.body;
+  // Add 'phone' to the destructured body
+  const { firstName, lastName, email, password, phone } = req.body;
 
-  if (!firstName || !lastName || !email || !password) {
+  // Add 'phone' to the validation check
+  if (!firstName || !lastName || !email || !password || !phone) {
     return next(new ErrorResponse('All fields are required.', 400));
   }
 
@@ -34,17 +36,19 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  
+
   // Fetch the default checks from the settings model
   const settings = await Settings.findOne() || await Settings.create({});
 
+  // Add 'phone' when creating the new user
   const user = await User.create({
     firstName,
     lastName,
     email,
     password: hashedPassword,
-    checksLeft: settings.defaultChecks,       // Set initial checks from settings
-    originalChecks: settings.defaultChecks,  // Record the original number of checks
+    phone, // Include the phone field here
+    checksLeft: settings.defaultChecks, // Set initial checks from settings
+    originalChecks: settings.defaultChecks, // Record the original number of checks
   });
 
   const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -58,13 +62,13 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      phone: user.phone, // Include the phone field in the response
       checksLeft: user.checksLeft,
-      originalChecks: user.originalChecks, 
+      originalChecks: user.originalChecks,
       firstLogin: user.firstLogin,
     },
   });
 });
-
 
 // -------------------- Login --------------------
 exports.login = catchAsyncErrors(async (req, res, next) => {
@@ -95,14 +99,13 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      phone: user.phone, // Include the phone field in the login response
       checksLeft: user.checksLeft,
-      originalChecks: user.originalChecks, // Include the new field in the response
+      originalChecks: user.originalChecks,
       firstLogin: user.firstLogin,
       role: user.role,
     },
-
   });
-  
 });
 
 // -------------------- Logout --------------------

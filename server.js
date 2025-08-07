@@ -5,7 +5,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authRoutes');
 const quoteRoutes = require('./routes/quoteRoutes');
-const adminRoutes = require('./routes/adminRoutes'); 
+const adminRoutes = require('./routes/adminRoutes');  
 const errorHandler = require('./middlewares/errorHandler');
 const logger = require('./middlewares/logger'); 
 
@@ -17,7 +17,7 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
-app.use(logger); // logging middleware
+app.use(logger);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -27,11 +27,18 @@ app.use('/api/admin', adminRoutes);
 // Error Handler (after routes)
 app.use(errorHandler);
 
-// Connect & Start
-const PORT = process.env.PORT || 5000;
+// Connect to MongoDB 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch(err => console.error('MongoDB connection error:', err));
+
+// Conditional check: Only call app.listen() for local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
+}
+
+// Vercel-specific: We always export the app instance.
+module.exports = app;

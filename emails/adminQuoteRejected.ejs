@@ -1,11 +1,9 @@
-<!-- emails/adminQuoteAccepted.ejs  -->
-<!-- 1. adminQuoteAccepted.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Accepted Quote - Admin Notification</title>
+    <title>Client Rejected Quote - Admin Notification</title>
     <style>
         * {
             margin: 0;
@@ -30,7 +28,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
@@ -52,7 +50,7 @@
         }
         
         .alert-box {
-            background-color: #28a745;
+            background-color: #dc3545;
             color: white;
             padding: 20px;
             border-radius: 8px;
@@ -67,7 +65,7 @@
             background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #e74c3c; /* Adjusted for rejection color */
         }
         
         .section-title {
@@ -105,7 +103,7 @@
         }
         
         .price-highlight {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
             color: white;
             font-size: 24px;
             font-weight: 700;
@@ -123,7 +121,7 @@
         }
         
         .footer a {
-            color: #667eea;
+            color: #e74c3c;
             text-decoration: none;
         }
         
@@ -160,25 +158,29 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>🎉 Quote Accepted!</h1>
-            <p>A client has accepted their <%= quoteType %> quote</p>
+            <h1>❌ Quote Rejected!</h1>
+            <p>A client has rejected their <%= quoteType %> quote offer</p>
         </div>
         
         <div class="content">
             <div class="alert-box">
-                Collection Required - Action Needed
+                Quote Rejected - No Further Action Required
             </div>
             
             <div class="section">
                 <div class="section-title">💰 Quote Details</div>
                 <div class="price-highlight">
-                    Final Price: £<%= price %>
+                    Offer Price: £<%= price %>
                 </div>
                 <div style="margin-top: 15px;">
                     <div class="info-row">
                         <span class="info-label">Quote Type:</span>
                         <span class="info-value"><%= quoteType.toUpperCase() %></span>
                     </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Reason for Rejection:</span>
+                    <span class="info-value"><%= rejectionReason %></span>
                 </div>
             </div>
             
@@ -214,25 +216,9 @@
                 </div>
             </div>
             
-            <div class="section">
-                <div class="section-title">📅 Collection Details</div>
-                <div class="info-row">
-                    <span class="info-label">Pickup Date:</span>
-                    <span class="info-value"><%= pickupDate %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Contact Number:</span>
-                    <span class="info-value"><%= collectionContact %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Address:</span>
-                    <span class="info-value"><%= address %></span>
-                </div>
-            </div>
-            
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
                 <p style="margin: 0; color: #856404; font-weight: 500;">
-                    <strong>Next Steps:</strong> Please arrange collection with the client and update the system once the vehicle has been collected.
+                    <strong>Next Steps:</strong> The client has rejected their quote offer. No further action is required from you.
                 </p>
             </div>
         </div>
