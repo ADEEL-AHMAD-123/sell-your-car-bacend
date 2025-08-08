@@ -9,7 +9,7 @@ router.post('/register', register);
 // @route   POST /api/auth/login
 router.post('/login', login);
 
-router.post('/me', getLoggedInUser);
+router.get('/me', getLoggedInUser);
 
 router.post('/logout', logout);
 
