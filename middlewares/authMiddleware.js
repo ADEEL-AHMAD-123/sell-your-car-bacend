@@ -1,23 +1,31 @@
-// middlewares/authMiddleware.js 
+// middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse'); // Make sure to import this
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware: Require login
 const protect = async (req, res, next) => {
   const token = req.cookies?.token;
-  if (!token) return res.status(401).json({ message: 'Not authenticated' });
+  if (!token) {
+    // Pass the error to the errorHandler
+    return next(new ErrorResponse('Not authenticated', 401));
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(401).json({ message: 'User not found' });
+
+    if (!user) {
+      return next(new ErrorResponse('User not found', 401));
+    }
 
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    // Pass the caught error to the errorHandler
+    return next(new ErrorResponse('Invalid or expired token', 401));
   }
 };
 
@@ -29,4 +37,4 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, adminOnly }; 
+module.exports = { protect, adminOnly };

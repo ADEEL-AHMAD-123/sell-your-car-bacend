@@ -1,5 +1,6 @@
+// middlewares/logger.js 
 const logger = (req, res, next) => {
-
+  if (process.env.NODE_ENV === 'production') return next();
 
   const start = Date.now();
   console.log(`📥 ${req.method} ${req.originalUrl}`);

@@ -1,3 +1,4 @@
+// middlewares/errorHandler.js 
 const axios = require('axios');
 
 const errorHandler = (err, req, res, next) => {
@@ -53,7 +54,7 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    stack: err.stack,
   });
 };
 
