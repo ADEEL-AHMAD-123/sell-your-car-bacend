@@ -114,3 +114,14 @@ exports.logout = (req, res) => {
   console.log('[LOGOUT] User logged out.');
   sendResponse(res, 200, 'Logged out successfully');
 };
+
+
+exports.getLoggedInUser = catchAsyncErrors(async (req, res, next) => {
+  // `req.user` is populated by the protect middleware
+  const user = await User.findById(req.user.id).select('-password');
+  if (!user) {
+    return next(new ErrorResponse('User not found.', 404));
+  }
+  
+  sendResponse(res, 200, 'User data fetched successfully.', { user });
+});
