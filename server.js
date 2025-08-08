@@ -14,7 +14,7 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: 'https://sell-your-car-frontend.vercel.app', credentials: true }));
+app.use(cors({ origin: '*', credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(logger);
