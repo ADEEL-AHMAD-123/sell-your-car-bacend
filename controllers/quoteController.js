@@ -63,7 +63,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
     });
   }
 
-  // === STEP 3: Check for a pending or reviewed manual quote
+  // === STEP 3: Check for a pending, reviewed, or rejected manual quote
   const existingManualQuote = await Quote.findOne({
     userId,
     regNumber: reg,
@@ -71,15 +71,25 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   }).sort({ createdAt: -1 });
 
   if (existingManualQuote) {
-    const { isReviewedByAdmin, adminOfferPrice } = existingManualQuote;
+    const { isReviewedByAdmin, adminOfferPrice, clientDecision } = existingManualQuote;
 
-    if (!isReviewedByAdmin || !adminOfferPrice) {
+    // NEW: Handle rejected case first
+    if (clientDecision === 'rejected') {
+      return sendResponse(res, 200, "Your previous manual quote was rejected. You can submit a new request.", {
+        quote: existingManualQuote,
+        status: "manual_previously_rejected",
+      });
+    }
+    
+    // Existing logic for pending review
+    if (!isReviewedByAdmin) {
       return sendResponse(res, 200, "Your manual quote request is still under admin review.", {
         quote: existingManualQuote,
         status: "manual_pending_review",
       });
     }
 
+    // Existing logic for reviewed but not decided
     if (isReviewedByAdmin && adminOfferPrice) {
       return sendResponse(res, 200, "A reviewed manual quote is awaiting your response.", {
         quote: existingManualQuote,
@@ -216,6 +226,9 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   } = existingQuote;
 
   // === Step 2: Handle known cases and prevent further updates if the quote is in a state that disallows new manual requests ===
+  
+  // Store the initial client decision to provide a contextual message later
+  const initialClientDecision = clientDecision;
 
   // Priority 1: Handle accepted/collected states first, as these are terminal states.
   if (clientDecision === "accepted") {
@@ -262,8 +275,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         }
       );
     }
-    // If a manual quote was rejected, it would fall through to Step 3 to allow re-submission/update.
-    // The `clientDecision` would be 'rejected' in that case, so the above `pending` checks wouldn't match.
+    // If a manual quote was rejected, it falls through to Step 3, as intended.
   }
 
   // === Step 3: Update manual fields ===
@@ -315,6 +327,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   existingQuote.adminOfferPrice = undefined; // Clear previous admin offer
   existingQuote.adminMessage = undefined; // Clear previous admin message
   existingQuote.rejectionReason = undefined; // Clear previous rejection reason if re-submitting
+  existingQuote.rejectedAt = undefined; // Clear previous rejection timestamp
 
   await existingQuote.save(); // Mongoose will automatically update the `updatedAt` timestamp here.
 
@@ -323,7 +336,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     // User confirmation email
     await sendEmail({
       to: userEmail,
-      subject: "📝 Manual Quote Request Received | SellYourCar.co.uk",
+      subject: "📝 Manual Quote Request Received | sellyourcar.info",
       templateName: "clientConfirmation",
       templateData: {
         userName,
@@ -354,7 +367,9 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         userEstimatedPrice,
         userProvidedWeight,
         reason: resolvedReason,
-        dashboardUrl: `${process.env.FRONTEND_URL}/admin/manual-quotes`,
+        dashboardUrl: `${process.env.FRONTEND_URL}/dashboard/manual-quotes`,
+        ourOfferPrice: existingQuote.estimatedScrapPrice,
+        revenueWeight: existingQuote.revenueWeight
       },
     });
     
@@ -365,7 +380,12 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   // === Step 6: Return response ===
   const { _id, createdAt, ...safeFields } = existingQuote.toObject();
 
-  return sendResponse(res, 200, "Manual quote submitted successfully", {
+  // NEW: Custom message based on previous state
+  const responseMessage = initialClientDecision === "rejected" 
+    ? "Manual quote resubmitted successfully" 
+    : "Manual quote submitted successfully";
+
+  return sendResponse(res, 200, responseMessage, {
     quote: {
       _id,
       ...safeFields,
@@ -374,6 +394,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     status: "manual_info_appended",
   });
 });
+
 
 
 
@@ -410,9 +431,11 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
     
     if (!quote) return next(new ErrorResponse("Quote not found", 404));
 
-    if (quote.clientDecision !== "pending") {
+    // CHECK MODIFIED: Allow a quote to be accepted if it's pending OR has been previously rejected.
+    // The only terminal state we must block is 'accepted'.
+    if (quote.clientDecision === "accepted") {
       return next(
-        new ErrorResponse("You have already responded to this quote.", 400)
+        new ErrorResponse("You have already accepted this quote.", 400)
       );
     }
     
@@ -474,7 +497,7 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
       // 6. Send CLIENT EMAIL
       await sendEmail({
         to: client.email,
-        subject: "✅ Quote Confirmed - Collection Scheduled | SellYourCar.co.uk",
+        subject: "✅ Quote Confirmed - Collection Scheduled | sellyourcar.info",
         templateName: "quoteConfirmation", 
         templateData: {
           name: `${client.firstName} ${client.lastName}`,
@@ -592,10 +615,10 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
   const { adminOfferPrice, adminMessage } = req.body;
 
-  if (!adminOfferPrice || !adminMessage) {
+  if (!adminOfferPrice) {
     return next(
       new ErrorResponse(
-        "Both adminOfferPrice and adminMessage are required.",
+        "Admin offer price is required.",
         400
       )
     );
@@ -614,10 +637,15 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
 
   // Update quote details
   quote.adminOfferPrice = adminOfferPrice;
-  quote.adminMessage = adminMessage;
+  // Make adminMessage optional
+  if (adminMessage) {
+    quote.adminMessage = adminMessage;
+  } else {
+    quote.adminMessage = undefined;
+  }
   quote.isReviewedByAdmin = true;
   quote.reviewedAt = new Date();
-  quote.finalPrice = adminOfferPrice; // Set final price when admin reviews a manual quote
+  quote.finalPrice = adminOfferPrice; 
   await quote.save();
 
   // Send email to user if email exists
@@ -627,7 +655,7 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
     try {
       await sendEmail({
         to: quote.userId.email,
-        subject: "🎯 Your Manual Quote is Ready! | SellYourCar.co.uk",
+        subject: "🎯 Your Manual Quote is Ready! | sellyourcar.info",
         templateName: "manualQuoteReviewed",
         templateData: {
           name: clientName || "Valued Customer",
@@ -639,7 +667,7 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
           userEstimatedPrice: quote.userEstimatedPrice || null,
           adminOfferPrice,
           adminMessage,
-          dashboardLink: `${process.env.FRONTEND_URL}/quote-result`,
+          dashboardLink: `${process.env.FRONTEND_URL}`,
         },
       });
     } catch (emailError) {
@@ -651,6 +679,7 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
     quote,
   });
 });
+
 
 // @desc    Get all accepted quotes (manual or auto)
 // @route   GET /api/admin/quotes/accepted
@@ -715,7 +744,7 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
       $or: [
         { "user.firstName": nameRegex },
         { "user.lastName": nameRegex },
-        { fullName: nameRegex }, // optional
+        { fullName: nameRegex }, 
       ],
     });
   }
@@ -744,28 +773,22 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
   const totalResult = await Quote.aggregate(totalPipeline);
   const total = totalResult[0]?.total || 0;
 
-  // Add pagination, sorting, projection
+  // Add pagination, sorting, and the corrected stage
   pipeline.push(
     { $sort: { updatedAt: -1, createdAt: -1 } },
     { $skip: skip },
     { $limit: parseInt(limit) },
+
+    // It replaces the 'user' field with a new object containing
+    // only the specified fields, while leaving all other fields intact.
     {
-      $project: {
-        _id: 1,
-        regNumber: 1,
-        make: 1,
-        model: 1,
-        type: 1,
-        clientDecision: 1,
-        collectionDetails: 1,
-        createdAt: 1,
-        updatedAt: 1,
+      $set: {
         user: {
-          _id: 1,
-          firstName: 1,
-          lastName: 1,
-          email: 1,
-          phone: 1,
+          _id: "$user._id",
+          firstName: "$user.firstName",
+          lastName: "$user.lastName",
+          email: "$user.email",
+          phone: "$user.phone",
         },
       },
     }
@@ -780,6 +803,8 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
     quotes,
   });
 });
+
+
 
 // @desc    Mark a quote as collected (admin only)
 // @route   PATCH /api/quote/:id/mark-collected
@@ -825,23 +850,38 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Quote not found.", 404));
   }
   
+  // --- STATE CHECKS: Check the quote's current state before validating the rejection reason. ---
+  
+  // Check if the quote has already been accepted. This is a terminal state.
+  if (quote.clientDecision === "accepted") {
+    return next(new ErrorResponse("This quote has already been accepted and cannot be rejected.", 400));
+  }
+  
+  // The user can now re-reject a quote if they previously rejected it.
+  // This check is removed to allow the action.
+  
+  // Check if the quote is the correct type for this action.
   if (quote.type !== 'manual') {
     return next(new ErrorResponse("Only manual quotes can be rejected by the client.", 400));
   }
-  
+
+  // Check if the quote has been reviewed by an admin.
+  if (!quote.isReviewedByAdmin) {
+    return next(new ErrorResponse("This quote has not yet been reviewed and cannot be rejected.", 400));
+  }
+
+  // --- INPUT VALIDATION: Now that the state is valid, check for required inputs. ---
+
   if (!rejectionReason || rejectionReason.trim() === '') {
     return next(new ErrorResponse("A reason for rejection is required.", 400));
   }
 
-  if (quote.clientDecision !== "pending" || !quote.isReviewedByAdmin) {
-    return next(new ErrorResponse("This quote cannot be rejected.", 400));
-  }
+  // --- PERFORM ACTION: All checks have passed. ---
 
   quote.clientDecision = "rejected";
   quote.rejectionReason = rejectionReason;
+  quote.rejectedAt = new Date(); //Store the rejection timestamp
   await quote.save();
-
-
 
   const client = quote.userId;
   const price = quote.adminOfferPrice || quote.estimatedScrapPrice; 
@@ -871,4 +911,6 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
 
   sendResponse(res, 200, "Quote successfully rejected.", { quote });
 });
+
+
 

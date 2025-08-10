@@ -34,7 +34,7 @@ router.patch("/:id/confirm", protect, confirmQuoteWithCollection);
 
 
 // Client rejects a reviewed quote offer
-router.patch('/quote/:id/reject', protect, rejectQuote);
+router.patch('/:id/reject', protect, rejectQuote);
 
 
 // =================== ADMIN ROUTES ===================

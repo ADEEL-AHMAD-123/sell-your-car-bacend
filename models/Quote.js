@@ -56,7 +56,8 @@ const quoteSchema = new mongoose.Schema({
   
 
   rejectionReason: String,
-
+  rejectedAt: Date,
+  
   clientDecision: {
     type: String,
     enum: ['pending', 'accepted', 'rejected'],

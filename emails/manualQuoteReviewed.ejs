@@ -1,4 +1,3 @@
-<!-- 5. manualQuoteReviewed.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,108 +12,112 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             line-height: 1.6;
-            color: #333333;
-            background-color: #f8f9fa;
+            color: #2c3e50;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px 0;
         }
         
         .email-container {
             max-width: 600px;
             margin: 0 auto;
             background-color: #ffffff;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
         }
         
         .header {
-            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #ffffff;
-            padding: 30px 20px;
+            padding: 40px 30px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
         }
         
         .header h1 {
-            font-size: 26px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
         }
         
         .header p {
             font-size: 16px;
-            opacity: 0.9;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
         }
-        
+
         .content {
-            padding: 30px 20px;
+            padding: 40px 30px;
         }
-        
-        .quote-ready {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-        
-        .quote-ready h2 {
-            font-size: 22px;
-            margin-bottom: 8px;
-        }
-        
-        .price-card {
-            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
-            color: white;
+
+        .intro-message {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 1px solid #bbdefb;
             padding: 25px;
             border-radius: 12px;
-            text-align: center;
-            margin: 25px 0;
-            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+            margin-bottom: 30px;
+            color: #1565c0;
         }
-        
-        .price-card h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-            opacity: 0.9;
+
+        .intro-message p {
+            font-size: 16px;
+            line-height: 1.7;
         }
-        
-        .price-card .price {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .price-card p {
-            opacity: 0.8;
-            font-size: 14px;
-        }
-        
+
         .section {
-            margin-bottom: 25px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            border-left: 4px solid #6f42c1;
+            margin-bottom: 30px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
         
         .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333333;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e9ecef;
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s ease;
+        }
+        
+        .info-row:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            border-radius: 6px;
+            padding-left: 10px;
+            padding-right: 10px;
         }
         
         .info-row:last-child {
@@ -123,125 +126,286 @@
         
         .info-label {
             font-weight: 600;
-            color: #666666;
+            color: #64748b;
             flex: 1;
+            font-size: 15px;
         }
         
         .info-value {
-            font-weight: 500;
-            color: #333333;
+            font-weight: 600;
+            color: #1e293b;
             flex: 2;
             text-align: right;
+            font-size: 15px;
         }
         
-        .admin-message {
-            background-color: #e3f2fd;
-            border: 1px solid #bbdefb;
-            color: #0d47a1;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+        .quote-block {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 35px 25px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
         }
-        
-        .admin-message h4 {
+
+        .quote-block::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 16px;
+            z-index: -1;
+            animation: borderGlow 2s ease-in-out infinite alternate;
+        }
+
+        .quote-block h2 {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .quote-block .price {
+            font-size: 42px;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .quote-block p {
             font-size: 16px;
             margin-bottom: 10px;
-            color: #1565c0;
+            opacity: 0.9;
         }
-        
+
         .cta-button {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 18px 35px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white !important;
+            padding: 18px 40px;
             text-decoration: none;
-            border-radius: 10px;
+            border-radius: 12px;
             display: inline-block;
-            font-weight: 600;
+            font-weight: 700;
             text-align: center;
-            margin: 25px 0;
+            margin-top: 25px;
             width: 100%;
             box-sizing: border-box;
             font-size: 18px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
         
         .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px);
+        }
+
+        .instructions-block {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
         }
         
-        .comparison-section {
-            background-color: #fff8dc;
-            border: 1px solid #ffd700;
-            padding: 20px;
-            border-radius: 8px;
+        .instructions-block h4 {
+            margin-bottom: 15px;
+            color: #0c4a6e;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .instructions-block p {
+            color: #0369a1;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .reg-display {
+            background-color: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
             margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
         }
         
-        .comparison-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+        .reg-display span {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .admin-message-block {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            color: #92400e;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .admin-message-block h4 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #78350f;
+        }
+
+        .admin-message-block p {
+            font-size: 15px;
+            line-height: 1.7;
+            font-weight: 500;
         }
         
         .footer {
-            background-color: #343a40;
-            color: #ffffff;
-            padding: 25px 20px;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            color: #f9fafb;
+            padding: 30px 25px;
             text-align: center;
         }
         
         .footer .logo {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: #ffffff;
         }
         
         .footer p {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-size: 14px;
             opacity: 0.8;
+            color: #d1d5db;
+        }
+
+        .footer .support-link {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .footer .support-link:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+        
+        /* Animations */
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        @keyframes borderGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content > * {
+            animation: fadeInUp 0.6s ease-out forwards;
         }
         
         @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px 0;
+            }
+
             .email-container {
-                margin: 10px;
-                border-radius: 8px;
+                margin: 0 10px;
+                border-radius: 12px;
             }
             
             .content {
-                padding: 20px 15px;
+                padding: 25px 20px;
             }
             
             .header {
-                padding: 20px 15px;
+                padding: 30px 20px;
             }
             
             .header h1 {
-                font-size: 22px;
+                font-size: 24px;
             }
-            
-            .price-card .price {
-                font-size: 28px;
+
+            .header p {
+                font-size: 15px;
             }
             
             .info-row {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 5px;
+                gap: 8px;
+                padding: 15px 0;
             }
             
             .info-value {
                 text-align: left;
+                font-weight: 700;
             }
-            
-            .comparison-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
+
+            .quote-block .price {
+                font-size: 36px;
+            }
+
+            .section {
+                padding: 20px 15px;
+            }
+
+            .reg-display {
+                padding: 15px 10px;
+            }
+
+            .reg-display span {
+                font-size: 16px;
+            }
+
+            .cta-button {
+                padding: 20px;
+                font-size: 16px;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .quote-block .price {
+                font-size: 32px;
+            }
+
+            .section-title {
+                font-size: 18px;
             }
         }
     </style>
@@ -249,24 +413,28 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>🎯 Your Quote is Ready!</h1>
-            <p>Hi <%= name %>, we've completed your manual valuation</p>
+            <h1>✅ Your Quote is Ready!</h1>
+            <p>We've reviewed your vehicle and have a final offer for you.</p>
         </div>
         
         <div class="content">
-            <div class="quote-ready">
-                <h2>✅ Manual Valuation Complete</h2>
-                <p>Our expert team has reviewed your vehicle details and prepared a personalized quote for you.</p>
+            <div class="intro-message">
+                <p>
+                    Hello <%= name %>,
+                </p>
+                <p style="margin-top: 10px;">
+                    Thank you for your manual quote request. Our valuation team has successfully reviewed your vehicle and has an offer ready for you.
+                </p>
             </div>
             
-            <div class="price-card">
-                <h3>Our Professional Valuation</h3>
+            <div class="quote-block">
+                <h2>Our Final Offer</h2>
                 <div class="price">£<%= adminOfferPrice %></div>
-                <p>Based on current market conditions and vehicle assessment</p>
+                <p style="font-style: italic; opacity: 0.9;">Based on your provided details and current market value.</p>
             </div>
             
             <div class="section">
-                <div class="section-title">🚗 Vehicle Summary</div>
+                <div class="section-title">🚗 Vehicle Details</div>
                 <div class="info-row">
                     <span class="info-label">Registration:</span>
                     <span class="info-value"><%= regNumber %></span>
@@ -281,174 +449,45 @@
                 </div>
                 <% if (weight) { %>
                 <div class="info-row">
-                    <span class="info-label">Vehicle Weight:</span>
+                    <span class="info-label">DVLA Revenue Weight:</span>
                     <span class="info-value"><%= weight %> kg</span>
                 </div>
                 <% } %>
             </div>
-            
-            <% if (userEstimatedPrice) { %>
-            <div class="comparison-section">
-                <h4 style="margin-bottom: 15px; color: #b8860b;">💰 Price Comparison</h4>
-                <div class="comparison-row">
-                    <span><strong>Your Estimated Price:</strong></span>
-                    <span>£<%= userEstimatedPrice %></span>
-                </div>
-                <div class="comparison-row">
-                    <span><strong>Our Professional Valuation:</strong></span>
-                    <span style="color: #6f42c1; font-weight: 700;">£<%= adminOfferPrice %></span>
-                </div>
-            </div>
-            <% } %>
-            
-            <div class="admin-message">
-                <h4>📝 Message from Our Valuation Team:</h4>
+
+            <% if (adminMessage) { %>
+            <div class="admin-message-block">
+                <h4>📝 A Message from Our Team:</h4>
                 <p><%= adminMessage %></p>
             </div>
-            
-            <a href="<%= dashboardLink %>" class="cta-button">
-                ✅ Accept Quote & Arrange Collection
-            </a>
-            
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-top: 25px;">
-                <h4 style="margin-bottom: 10px; color: #856404;">⏰ Important Information</h4>
-                <ul style="margin-left: 20px; color: #856404;">
-                    <li>This quote is valid for 7 days from the date of this email</li>
-                    <li>Click the button above to accept and schedule collection</li>
-                    <li>Our team will contact you within 24 hours of acceptance</li>
-                    <li>Payment is processed upon successful vehicle collection</li>
-                </ul>
-            </div>
-            
-            <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-                <p style="margin: 0; color: #666666;">
-                    <strong>Questions about your quote?</strong><br>
-                    Reply to this email or contact our customer service team.<br>
-                    We're here to help make your vehicle sale as smooth as possible.
-                </p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <div class="logo">SellYourCar.co.uk</div>
-            <p>Professional vehicle valuations you can trust</p>
-            <p>Customer Service: support@sellyourcar.co.uk</p>
-            <p>&copy; 2024 SellYourCar.co.uk. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html> 0.8;
-        }
-        
-        @media only screen and (max-width: 600px) {
-            .email-container {
-                margin: 10px;
-                border-radius: 8px;
-            }
-            
-            .content {
-                padding: 20px 15px;
-            }
-            
-            .header {
-                padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 22px;
-            }
-            
-            .info-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .info-value {
-                text-align: left;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>✅ Quote Confirmed!</h1>
-            <p>Thank you <%= name %>, your vehicle collection is scheduled</p>
-        </div>
-        
-        <div class="content">
-            <div class="success-message">
-                <h2>🎉 Congratulations!</h2>
-                <p>Your <strong><%= quoteType %></strong> quote has been successfully confirmed. We'll be in touch soon to arrange collection.</p>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">💰 Confirmed Quote</div>
-                <div class="price-highlight">
-                    You'll Receive: £<%= price %>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Quote Type:</span>
-                    <span class="info-value"><%= quoteType.toUpperCase() %></span>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">🚗 Vehicle Details</div>
-                <div class="info-row">
-                    <span class="info-label">Registration:</span>
-                    <span class="info-value"><%= reg %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Make & Model:</span>
-                    <span class="info-value"><%= make %> <%= model %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Weight:</span>
-                    <span class="info-value"><%= weight %> kg</span>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">📅 Collection Information</div>
-                <div class="info-row">
-                    <span class="info-label">Pickup Date:</span>
-                    <span class="info-value"><%= pickupDate %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Contact Number:</span>
-                    <span class="info-value"><%= contactNumber %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Collection Address:</span>
-                    <span class="info-value"><%= address %></span>
-                </div>
-            </div>
-            
-            <div class="next-steps">
-                <h3>📋 What Happens Next?</h3>
-                <ul>
-                    <li>Our team will contact you 24-48 hours before collection</li>
-                    <li>Ensure your vehicle is accessible on the scheduled date</li>
-                    <li>Have your V5C (log book) and keys ready</li>
-                    <li>Payment will be processed upon successful collection</li>
-                </ul>
-            </div>
-            
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <p style="margin: 0; color: #856404;">
-                    <strong>Questions?</strong> Feel free to reply to this email or contact our customer service team.
-                </p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <div class="logo">SellYourCar.co.uk</div>
-            <p>Thank you for choosing us for your vehicle sale</p>
-            <p>Customer Service: support@sellyourcar.co.uk</p>
-            <p>&copy; <%= new Date().getFullYear() %> SellYourCar.co.uk. All rights reserved.</p>
+            <% } %>
 
+            <div class="instructions-block">
+                <h4 style="color: #0c4a6e;">What happens next?</h4>
+                <p style="margin-bottom: 15px;">
+                    To view all details of your quote and decide whether to accept or reject it, please click the button below. Your registration number is provided for reference, which you can use to retrieve your quote on our app.
+                </p>
+                <div class="reg-display">
+                    <span id="reg-number-value"><%= regNumber %></span>
+                </div>
+                <a href="<%= dashboardLink %>" class="cta-button">
+                    Go to App & View Quote
+                </a>
+            </div>
+
+            <!-- New Questions or concerns section -->
+            <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; padding: 20px; border-radius: 8px; margin-top: 25px;">
+                <p style="margin: 0; color: #0d47a1;">
+                    <strong>📞 Questions or concerns?</strong> Our customer service team is here to help! Contact us at <a href="mailto:admin@sellyourcar.info" style="color: #0d47a1;">admin@sellyourcar.info</a> or by phone at <a href="tel:+447561785668" style="color: #0d47a1;">+44 7561 785668</a>. We're available Monday-Friday, 9am-5pm.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="logo">SellYourCar</div>
+            <p>Vehicle valuations you can trust</p>
+            <p>Customer Service: <a href="mailto:admin@sellyourcar.info" class="support-link">admin@sellyourcar.info</a></p>
+            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
         </div>
     </div>
 </body>

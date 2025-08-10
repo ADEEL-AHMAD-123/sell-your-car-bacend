@@ -161,6 +161,10 @@
             border-left: 4px solid #28a745;
         }
         
+        .timeline-item > div:last-child {
+            flex-grow: 1;
+        }
+
         .timeline-icon {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
@@ -224,14 +228,18 @@
             }
             
             .timeline-item {
+                /* Changed to stack vertically but keep everything centered */
                 flex-direction: column;
-                align-items: flex-start;
-                text-align: left;
+                align-items: center;
+                text-align: center;
             }
             
             .timeline-icon {
                 margin-bottom: 10px;
                 margin-right: 0;
+            }
+            .timeline-item > div:last-child {
+                text-align: center;
             }
         }
     </style>
@@ -346,16 +354,16 @@
             
             <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; padding: 20px; border-radius: 8px; margin-top: 25px;">
                 <p style="margin: 0; color: #0d47a1;">
-                    <strong>📞 Questions or concerns?</strong> Our customer service team is here to help! Contact us at support@sellyourcar.co.uk or reply to this email. We're available Monday-Friday, 9am-5pm.
+                    <strong>📞 Questions or concerns?</strong> Our customer service team is here to help! Contact us at <a href="mailto:support@sellyourcar.co.uk" style="color: #0d47a1;">admin@sellyourcar.info</a> or by phone at <a href="tel:+447561785668" style="color: #0d47a1;">+44 7561 785668</a>. We're available Monday-Friday, 9am-5pm.
                 </p>
             </div>
         </div>
         
         <div class="footer">
-            <div class="logo">SellYourCar.co.uk</div>
+            <div class="logo">SellYourCar</div>
             <p>Thank you for choosing our vehicle collection service</p>
-            <p>Customer Service: support@sellyourcar.co.uk</p>
-            <p>&copy; <%= new Date().getFullYear() %> SellYourCar.co.uk. All rights reserved.</p>
+            <p>Customer Service: admin@sellyourcar.info</p>
+            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
 
         </div>
     </div>

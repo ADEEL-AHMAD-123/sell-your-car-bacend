@@ -207,6 +207,14 @@
                     <span class="info-value"><%= userProvidedWeight %> kg</span>
                 </div>
                 <% } %>
+
+                <% if (typeof revenueWeight !== "undefined" && revenueWeight !== null) { %>
+                <div class="info-row">
+                    <span class="info-label">DVLA Revenue Weight:</span>
+                    <span class="info-value"><%= revenueWeight %> kg</span>
+                </div>
+                <% } %>
+
             </div>
             
             <% if (typeof userEstimatedPrice !== "undefined" && userEstimatedPrice) { %>
@@ -216,6 +224,14 @@
                     <span class="info-label">Customer's Estimated Price:</span>
                     <span class="info-value">£<%= userEstimatedPrice %></span>
                 </div>
+
+                <% if (typeof ourOfferPrice !== "undefined" && ourOfferPrice !== null) { %>
+                <div class="info-row">
+                    <span class="info-label">Our Offer Price:</span>
+                    <span class="info-value">£<%= ourOfferPrice %></span>
+                </div>
+                <% } %>
+
             </div>
             <% } %>
             
@@ -235,9 +251,9 @@
         </div>
         
         <div class="footer">
-            <p><strong>SellYourCar.co.uk</strong> - Admin Notification</p>
+            <p><strong>SellYourCar</strong> - Admin Notification</p>
             <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; <%= new Date().getFullYear() %> SellYourCar.co.uk. All rights reserved.</p>
+            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
 
         </div>
     </div>
