@@ -1,5 +1,3 @@
-<!-- emails/adminQuoteAccepted.ejs  -->
-<!-- 1. adminQuoteAccepted.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,6 +100,7 @@
             color: #333333;
             flex: 2;
             text-align: right;
+            word-break: break-word; /* Ensure long words break */
         }
         
         .price-highlight {
@@ -123,8 +122,19 @@
         }
         
         .footer a {
-            color: #667eea;
+            color: #ffffff;
             text-decoration: none;
+        }
+        
+        .button {
+            display: inline-block;
+            background-color: #667eea;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
         }
         
         @media only screen and (max-width: 600px) {
@@ -179,6 +189,10 @@
                         <span class="info-label">Quote Type:</span>
                         <span class="info-value"><%= quoteType.toUpperCase() %></span>
                     </div>
+                    <div class="info-row">
+                        <span class="info-label">Accepted At:</span>
+                        <span class="info-value"><%= acceptedAt %></span>
+                    </div>
                 </div>
             </div>
             
@@ -193,7 +207,11 @@
                     <span class="info-value"><%= make %> <%= model %></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Weight:</span>
+                    <span class="info-label">Year:</span>
+                    <span class="info-value"><%= year %></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Kerb Weight:</span>
                     <span class="info-value"><%= weight %> kg</span>
                 </div>
             </div>
@@ -230,6 +248,12 @@
                 </div>
             </div>
             
+            <div style="text-align: center;">
+                <a href="<%= dashboardUrl %>" class="button">
+                    📊 View in Dashboard
+                </a>
+            </div>
+            
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
                 <p style="margin: 0; color: #856404; font-weight: 500;">
                     <strong>Next Steps:</strong> Please arrange collection with the client and update the system once the vehicle has been collected.
@@ -240,8 +264,7 @@
         <div class="footer">
             <p><strong>SellYourCar</strong> - Admin Notification</p>
             <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
-
+            <p>&copy; <%= new Date().getFullYear() %> <a href="#" style="color: #667eea;">sellyourcar.info</a> All rights reserved.</p>
         </div>
     </div>
 </body>

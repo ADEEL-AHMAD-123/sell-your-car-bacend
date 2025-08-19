@@ -1,4 +1,3 @@
-<!-- 3. manual-quote-admin.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,6 +132,11 @@
             font-size: 14px;
         }
         
+        .footer a {
+            color: #667eea !important;
+            text-decoration: none;
+        }
+        
         @media only screen and (max-width: 600px) {
             .email-container {
                 margin: 10px;
@@ -162,13 +166,31 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>🔍 Manual Quote Request</h1>
+            <h1>🔍 New Manual Quote Request</h1>
             <p>Admin Review Required</p>
         </div>
         
         <div class="content">
             <div class="urgent-alert">
                 ⚠️ Manual Quote Review Needed
+            </div>
+            
+            <div class="section">
+                <div class="section-title">💰 Quote & Price Information</div>
+                
+                <div class="info-row">
+                    <span class="info-label">Customer's Estimated Price:</span>
+                    <span class="info-value">£<%= typeof userEstimatedPrice !== "undefined" && userEstimatedPrice ? userEstimatedPrice : "N/A" %></span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Our Offer Price:</span>
+                    <span class="info-value">£<%= typeof ourOfferPrice !== "undefined" && ourOfferPrice !== null ? ourOfferPrice : "N/A" %></span>
+                </div>
+            
+                <div class="reason-highlight" style="margin-top: 15px;">
+                    <strong>Request Reason:</strong> <%= reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                </div>
             </div>
             
             <div class="section">
@@ -208,35 +230,12 @@
                 </div>
                 <% } %>
 
-                <% if (typeof revenueWeight !== "undefined" && revenueWeight !== null) { %>
+                <% if (typeof kerbWeight !== "undefined" && kerbWeight !== null) { %>
                 <div class="info-row">
-                    <span class="info-label">DVLA Revenue Weight:</span>
-                    <span class="info-value"><%= revenueWeight %> kg</span>
+                    <span class="info-label">Kerb Weight:</span>
+                    <span class="info-value"><%= kerbWeight %> kg</span>
                 </div>
                 <% } %>
-
-            </div>
-            
-            <% if (typeof userEstimatedPrice !== "undefined" && userEstimatedPrice) { %>
-            <div class="section">
-                <div class="section-title">💰 Price Information</div>
-                <div class="info-row">
-                    <span class="info-label">Customer's Estimated Price:</span>
-                    <span class="info-value">£<%= userEstimatedPrice %></span>
-                </div>
-
-                <% if (typeof ourOfferPrice !== "undefined" && ourOfferPrice !== null) { %>
-                <div class="info-row">
-                    <span class="info-label">Our Offer Price:</span>
-                    <span class="info-value">£<%= ourOfferPrice %></span>
-                </div>
-                <% } %>
-
-            </div>
-            <% } %>
-            
-            <div class="reason-highlight">
-                <strong>Request Reason:</strong> <%= reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
             </div>
             
             <a href="<%= dashboardUrl %>" class="cta-button">
@@ -253,7 +252,7 @@
         <div class="footer">
             <p><strong>SellYourCar</strong> - Admin Notification</p>
             <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
+            <p>&copy; <%= new Date().getFullYear() %> <a href="#" style="color: #667eea;">sellyourcar.info</a> All rights reserved.</p>
 
         </div>
     </div>

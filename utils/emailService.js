@@ -1,3 +1,4 @@
+// file:utils/emailService.js 
 const nodemailer = require("nodemailer");
 const path = require("path");
 const ejs = require("ejs");
@@ -23,7 +24,7 @@ const sendEmail = async ({ to, subject, templateName, templateData }) => {
     const html = await ejs.renderFile(templatePath, templateData);
 
     await transporter.sendMail({
-      from: `SellYourCar <${process.env.EMAIL_USER}>`,
+      from: `SellYourCar <${process.env.EMAIL_USER}>`, 
       to,
       subject,
       html,

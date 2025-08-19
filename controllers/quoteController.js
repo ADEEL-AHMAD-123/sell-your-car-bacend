@@ -1,7 +1,6 @@
-// controllers/quoteController.js 
 const User = require("../models/User");
 const Quote = require("../models/Quote");
-const { fetchVehicleData } = require("../utils/dvlaClient");
+const { fetchVehicleData } = require("../utils/vehicleApiClient.js");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const sendResponse = require("../utils/sendResponse");
 const sendEmail = require("../utils/emailService");
@@ -73,7 +72,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   if (existingManualQuote) {
     const { isReviewedByAdmin, adminOfferPrice, clientDecision } = existingManualQuote;
 
-    // NEW: Handle rejected case first
+    // Handle rejected case first
     if (clientDecision === 'rejected') {
       return sendResponse(res, 200, "Your previous manual quote was rejected. You can submit a new request.", {
         quote: existingManualQuote,
@@ -81,7 +80,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
       });
     }
     
-    // Existing logic for pending review
+    // Logic for pending review
     if (!isReviewedByAdmin) {
       return sendResponse(res, 200, "Your manual quote request is still under admin review.", {
         quote: existingManualQuote,
@@ -89,7 +88,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
       });
     }
 
-    // Existing logic for reviewed but not decided
+    // Logic for reviewed but not decided
     if (isReviewedByAdmin && adminOfferPrice) {
       return sendResponse(res, 200, "A reviewed manual quote is awaiting your response.", {
         quote: existingManualQuote,
@@ -108,7 +107,8 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   // === STEP 5: Fetch DVLA data
   const vehicle = await fetchVehicleData(reg);
 
-  if (!vehicle || !vehicle.registrationNumber) {
+  // The vehicle object is now nested. Access Vrm to check if the vehicle was found.
+  if (!vehicle || !vehicle.vehicleRegistration?.Vrm) {
     return next(new ErrorResponse("Vehicle not found or invalid registration.", 404));
   }
 
@@ -119,37 +119,23 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   // === Get the dynamic scrap rate from the Settings model ===
   const settings = await Settings.findOne() || await Settings.create({});
   const scrapRatePerKg = settings.scrapRatePerKg;
-  
-  const weight = vehicle.revenueWeight;
+
+  // Access the weight from the new nested object
+  const weight = vehicle.otherVehicleData?.KerbWeight;
   const estimatedPrice = weight
     ? parseFloat((weight * scrapRatePerKg).toFixed(2))
     : null;
 
-  // === STEP 7: Build auto quote
+  // === STEP 7: Build auto quote using the new nested schema structure
   const quoteData = {
-    regNumber: vehicle.registrationNumber,
-    make: vehicle.make || undefined,
-    model: vehicle.model || undefined,
-    fuelType: vehicle.fuelType || undefined,
-    co2Emissions: vehicle.co2Emissions || undefined,
-    colour: vehicle.colour || undefined,
-    year: vehicle.yearOfManufacture || undefined,
-    engineCapacity: vehicle.engineCapacity || undefined,
-    revenueWeight: vehicle.revenueWeight || undefined,
-    taxStatus: vehicle.taxStatus || undefined,
-    motStatus: vehicle.motStatus || undefined,
-    euroStatus: vehicle.euroStatus || undefined,
-    realDrivingEmissions: vehicle.realDrivingEmissions || undefined,
-    wheelPlan: vehicle.wheelplan || undefined,
-    typeApproval: vehicle.typeApproval || undefined,
-    markedForExport: vehicle.markedForExport !== undefined ? vehicle.markedForExport : undefined,
-    dateOfLastV5CIssued: vehicle.dateOfLastV5CIssued || undefined,
-    taxDueDate: vehicle.taxDueDate || undefined,
-    artEndDate: vehicle.artEndDate || undefined,
-    estimatedScrapPrice: estimatedPrice,
-    type: "auto",
-    dvlaFetchedAt: new Date(),
     userId,
+    regNumber: vehicle.vehicleRegistration.Vrm,
+    type: "auto",
+    estimatedScrapPrice: estimatedPrice,
+    dvlaFetchedAt: new Date(),
+    // Assign the normalized vehicle data directly to the nested fields
+    vehicleRegistration: vehicle.vehicleRegistration,
+    otherVehicleData: vehicle.otherVehicleData,
   };
 
   // === STEP 8: Save or update auto quote
@@ -210,9 +196,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   const existingQuote = await Quote.findOne({ userId, regNumber: reg });
 
   if (!existingQuote) {
-    // If no existing quote (auto or manual) is found, it means the user is trying
-    // to submit a manual quote for a vehicle that hasn't gone through the auto-quote flow.
-    // This scenario should ideally be handled by first generating an auto quote.
     return next(
       new ErrorResponse("No existing quote found for this vehicle. Please generate an auto-quote first.", 404)
     );
@@ -227,19 +210,15 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
 
   // === Step 2: Handle known cases and prevent further updates if the quote is in a state that disallows new manual requests ===
   
-  // Store the initial client decision to provide a contextual message later
   const initialClientDecision = clientDecision;
 
-  // Priority 1: Handle accepted/collected states first, as these are terminal states.
   if (clientDecision === "accepted") {
     if (collected) {
-      // Both auto and manual accepted and collected quotes are final.
       return sendResponse(res, 400, `Quote already accepted and collected for this vehicle.`, {
         quote: existingQuote,
         status: type === "auto" ? "auto_accepted_collected" : "manual_accepted_collected",
       });
     } else {
-      // Both auto and manual accepted but not yet collected quotes are also final for new manual requests.
       return sendResponse(res, 400, `Quote already accepted for this vehicle. Pending collection.`, {
         quote: existingQuote,
         status: type === "auto" ? "auto_accepted_not_collected" : "manual_accepted_pending_collection",
@@ -247,11 +226,8 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     }
   }
 
-  // Priority 2: Handle manual quotes that are pending review or reviewed.
-  // This ensures that if a manual quote is already in progress, a new manual request isn't processed.
   if (type === "manual") {
     if (!isReviewedByAdmin && clientDecision === "pending") {
-      // Manual quote already requested, pending admin review.
       return sendResponse(
         res,
         200,
@@ -264,7 +240,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     }
 
     if (isReviewedByAdmin && clientDecision === "pending") {
-      // Manual quote reviewed by admin, awaiting client decision.
       return sendResponse(
         res,
         200,
@@ -275,36 +250,28 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         }
       );
     }
-    // If a manual quote was rejected, it falls through to Step 3, as intended.
   }
 
   // === Step 3: Update manual fields ===
-  // This section will only be reached if:
-  // 1. An auto quote exists and is NOT accepted/collected.
-  // 2. A manual quote exists and was previously rejected (allowing re-submission/update).
+  // Note: These fields are now being set on the nested 'vehicleRegistration' object
+  if (!existingQuote.vehicleRegistration.Make && make) existingQuote.vehicleRegistration.Make = make;
+  if (!existingQuote.vehicleRegistration.Model && model) existingQuote.vehicleRegistration.Model = model;
+  if (!existingQuote.vehicleRegistration.FuelType && fuelType) existingQuote.vehicleRegistration.FuelType = fuelType;
+  if (!existingQuote.vehicleRegistration.YearOfManufacture && year) existingQuote.vehicleRegistration.YearOfManufacture = year;
+  if (!existingQuote.vehicleRegistration.WheelPlan && wheelPlan) existingQuote.vehicleRegistration.WheelPlan = wheelPlan;
 
-  // Only update fields if they are not already present (for initial population from manual input)
-  // or if a new message/images are provided.
-  // Note: If the user provides `make`, `model`, etc., they will only be updated if the existing quote
-  // does NOT already have these fields populated (e.g., from DVLA data).
-  if (!existingQuote.make && make) existingQuote.make = make;
-  if (!existingQuote.model && model) existingQuote.model = model;
-  if (!existingQuote.fuelType && fuelType) existingQuote.fuelType = fuelType;
-  if (!existingQuote.year && year) existingQuote.year = year;
-  if (!existingQuote.wheelPlan && wheelPlan) existingQuote.wheelPlan = wheelPlan;
-
-  if (message) existingQuote.message = message;
-
+  if (message) existingQuote.manualDetails.message = message;
+  
   if (Array.isArray(req.files) && req.files.length > 0) {
     const uploadedImages = req.files.map(file => file.path);
     // Ensure we don't exceed 6 images, append new ones
-    existingQuote.images = [...(existingQuote.images || []), ...uploadedImages].slice(0, 6);
+    existingQuote.manualDetails.images = [...(existingQuote.manualDetails.images || []), ...uploadedImages].slice(0, 6);
   }
 
   if (userEstimatedPrice !== undefined)
-    existingQuote.userEstimatedPrice = userEstimatedPrice;
+    existingQuote.manualDetails.userEstimatedPrice = userEstimatedPrice;
   if (userProvidedWeight !== undefined)
-    existingQuote.userProvidedWeight = userProvidedWeight;
+    existingQuote.manualDetails.userProvidedWeight = userProvidedWeight;
 
   // === Step 4: Automatically determine manualQuoteReason and set type to manual ===
   let resolvedReason = "user_requested_review";
@@ -313,23 +280,23 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     resolvedReason = "auto_price_missing";
   } else if (
     typeof userEstimatedPrice === "number" &&
-    existingQuote.estimatedScrapPrice !== null && // Ensure estimatedScrapPrice is not null before comparison
+    existingQuote.estimatedScrapPrice !== null && 
     userEstimatedPrice > existingQuote.estimatedScrapPrice
   ) {
     resolvedReason = "user_thinks_value_higher";
   }
 
-  existingQuote.manualQuoteReason = resolvedReason;
-  existingQuote.type = "manual"; // Explicitly set to manual as it's now a manual request
-  existingQuote.lastManualRequestAt = new Date();
-  existingQuote.isReviewedByAdmin = false; // Reset admin review status for new manual request
-  existingQuote.clientDecision = "pending"; // Reset client decision to pending for new manual request
-  existingQuote.adminOfferPrice = undefined; // Clear previous admin offer
-  existingQuote.adminMessage = undefined; // Clear previous admin message
-  existingQuote.rejectionReason = undefined; // Clear previous rejection reason if re-submitting
-  existingQuote.rejectedAt = undefined; // Clear previous rejection timestamp
+  existingQuote.manualDetails.manualQuoteReason = resolvedReason;
+  existingQuote.type = "manual"; 
+  existingQuote.manualDetails.lastManualRequestAt = new Date();
+  existingQuote.isReviewedByAdmin = false;
+  existingQuote.clientDecision = "pending";
+  existingQuote.adminOfferPrice = undefined;
+  existingQuote.adminMessage = undefined;
+  existingQuote.rejectionReason = undefined;
+  existingQuote.rejectedAt = undefined;
 
-  await existingQuote.save(); // Mongoose will automatically update the `updatedAt` timestamp here.
+  await existingQuote.save();
 
   // === Step 5: Send emails ===
   try {
@@ -342,9 +309,9 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         userName,
         userPhone: userPhone || "N/A",
         regNumber: reg,
-        make: existingQuote.make || "N/A",
-        model: existingQuote.model || "N/A",
-        year: existingQuote.year || "N/A",
+        make: existingQuote.vehicleRegistration.Make || "N/A",
+        model: existingQuote.vehicleRegistration.Model || "N/A",
+        year: existingQuote.vehicleRegistration.YearOfManufacture || "N/A",
         userEstimatedPrice,
         userProvidedWeight,
         reason: resolvedReason,
@@ -361,15 +328,15 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         userPhone: userPhone || "N/A",
         userEmail,
         regNumber: reg,
-        make: existingQuote.make || "N/A",
-        model: existingQuote.model || "N/A",
-        year: existingQuote.year || "N/A",
+        make: existingQuote.vehicleRegistration.Make || "N/A",
+        model: existingQuote.vehicleRegistration.Model || "N/A",
+        year: existingQuote.vehicleRegistration.YearOfManufacture || "N/A",
         userEstimatedPrice,
         userProvidedWeight,
         reason: resolvedReason,
         dashboardUrl: `${process.env.FRONTEND_URL}/dashboard/manual-quotes`,
         ourOfferPrice: existingQuote.estimatedScrapPrice,
-        revenueWeight: existingQuote.revenueWeight
+        kerbWeight: existingQuote.otherVehicleData.KerbWeight 
       },
     });
     
@@ -380,7 +347,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   // === Step 6: Return response ===
   const { _id, createdAt, ...safeFields } = existingQuote.toObject();
 
-  // NEW: Custom message based on previous state
   const responseMessage = initialClientDecision === "rejected" 
     ? "Manual quote resubmitted successfully" 
     : "Manual quote submitted successfully";
@@ -394,6 +360,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     status: "manual_info_appended",
   });
 });
+
 
 
 
@@ -431,8 +398,6 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
     
     if (!quote) return next(new ErrorResponse("Quote not found", 404));
 
-    // CHECK MODIFIED: Allow a quote to be accepted if it's pending OR has been previously rejected.
-    // The only terminal state we must block is 'accepted'.
     if (quote.clientDecision === "accepted") {
       return next(
         new ErrorResponse("You have already accepted this quote.", 400)
@@ -452,6 +417,7 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
 
     // Set the final price and client decision before saving
     quote.clientDecision = "accepted";
+    quote.acceptedAt = new Date(); // New line: Set the acceptedAt timestamp
     quote.collectionDetails = {
       pickupDate: pickupDateObj,
       contactNumber,
@@ -464,12 +430,21 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
 
     const client = quote.userId;
 
-    // 4. Format pickup date for display
+    // 4. Format pickup date and accepted date for display
     const formattedPickupDate = pickupDateObj.toLocaleDateString('en-GB', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
+    });
+    
+    // Format the acceptedAt date with full date and time
+    const formattedAcceptedAt = new Date(quote.acceptedAt).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 
     try {
@@ -481,16 +456,23 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
         templateData: {
           quoteType: quote.type,
           reg: quote.regNumber,
-          make: quote.make || "N/A",
-          model: quote.model || "N/A",
-          weight: quote.revenueWeight || "N/A",
+          // Accessing make and model from the nested vehicleRegistration object
+          make: quote.vehicleRegistration.Make || "N/A",
+          model: quote.vehicleRegistration.Model || "N/A",
+          // Add the year of manufacture
+          year: quote.vehicleRegistration.YearOfManufacture || "N/A",
+          // Accessing weight from the nested otherVehicleData object
+          weight: quote.otherVehicleData.KerbWeight || "N/A",
           price: finalPrice || "0",
           clientName: `${client.firstName} ${client.lastName}`,
           clientEmail: client.email,
           clientPhone: client.phone || "N/A",
           pickupDate: formattedPickupDate,
+          acceptedAt: formattedAcceptedAt, // New line: Add the formatted accepted date
           address,
           collectionContact: contactNumber,
+          // Add the dashboard URL for the button
+          dashboardUrl: `${process.env.FRONTEND_URL}/dashboard/accepted-quotes`,
         },
       });
 
@@ -503,9 +485,13 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
           name: `${client.firstName} ${client.lastName}`,
           quoteType: quote.type,
           reg: quote.regNumber,
-          make: quote.make || "N/A",
-          model: quote.model || "N/A",
-          weight: quote.revenueWeight || "N/A",
+          // Accessing make and model from the nested vehicleRegistration object
+          make: quote.vehicleRegistration.Make || "N/A",
+          model: quote.vehicleRegistration.Model || "N/A",
+          // Add the year of manufacture
+          year: quote.vehicleRegistration.YearOfManufacture || "N/A",
+          // Accessing weight from the nested otherVehicleData object
+          weight: quote.otherVehicleData.KerbWeight || "N/A",
           price: finalPrice || "0",
           clientEmail: client.email,
           clientPhone: client.phone || "N/A",
@@ -528,6 +514,8 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
 );
 
 
+
+
 // @desc    Get all pending manual quotes (admin only)
 // @route   GET /api/admin/manual-quotes/pending
 // @access  Admin
@@ -546,15 +534,13 @@ exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
   } = req.query;
 
   const matchStage = {
-    type: "manual", // Only manual
+    type: "manual",
     isReviewedByAdmin: false,
     clientDecision: "pending",
   };
 
   const pipeline = [
     { $match: matchStage },
-
-    // Join user data
     {
       $lookup: {
         from: "users",
@@ -564,8 +550,6 @@ exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
       },
     },
     { $unwind: "$user" },
-
-    // Search stage (each field filters only its own)
     {
       $match: {
         ...(customerName && {
@@ -580,9 +564,10 @@ exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
         ...(customerPhone && {
           "user.phone": { $regex: customerPhone, $options: "i" },
         }),
+        // Now searching on the nested fields
         ...(regNumber && { regNumber: { $regex: regNumber, $options: "i" } }),
-        ...(make && { make: { $regex: make, $options: "i" } }),
-        ...(model && { model: { $regex: model, $options: "i" } }),
+        ...(make && { "vehicleRegistration.Make": { $regex: make, $options: "i" } }),
+        ...(model && { "vehicleRegistration.Model": { $regex: model, $options: "i" } }),
       },
     },
 
@@ -630,14 +615,11 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Manual quote not found.", 404));
   }
 
-  // === Added check: Ensure quote is still pending client decision and not already reviewed ===
   if (quote.clientDecision !== "pending" || quote.isReviewedByAdmin) {
     return next(new ErrorResponse("This manual quote has already been reviewed or a decision has been made.", 400));
   }
 
-  // Update quote details
   quote.adminOfferPrice = adminOfferPrice;
-  // Make adminMessage optional
   if (adminMessage) {
     quote.adminMessage = adminMessage;
   } else {
@@ -648,7 +630,6 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
   quote.finalPrice = adminOfferPrice; 
   await quote.save();
 
-  // Send email to user if email exists
   if (quote.userId && quote.userId.email) {
     const clientName = `${quote.userId.firstName} ${quote.userId.lastName}`;
 
@@ -660,11 +641,13 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
         templateData: {
           name: clientName || "Valued Customer",
           regNumber: quote.regNumber,
-          make: quote.make || "N/A",
-          model: quote.model || "N/A",
-          year: quote.year || "N/A",
-          weight: quote.revenueWeight || null,
-          userEstimatedPrice: quote.userEstimatedPrice || null,
+          // Accessing make, model, year from the new nested object
+          make: quote.vehicleRegistration.Make || "N/A",
+          model: quote.vehicleRegistration.Model || "N/A",
+          year: quote.vehicleRegistration.YearOfManufacture || "N/A",
+          // Accessing weight from the new nested object
+          weight: quote.otherVehicleData.KerbWeight || null,
+          userEstimatedPrice: quote.manualDetails.userEstimatedPrice || null,
           adminOfferPrice,
           adminMessage,
           dashboardLink: `${process.env.FRONTEND_URL}`,
@@ -704,12 +687,10 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
     "collectionDetails.collected": false,
   };
 
-  // Apply type filter if specified
   if (type && type !== "all") {
     matchStage.type = type;
   }
 
-  // Initial pipeline with match
   const pipeline = [
     { $match: matchStage },
     {
@@ -723,19 +704,20 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
     { $unwind: "$user" },
   ];
 
-  // Build additional search conditions
   const searchConditions = [];
 
   if (regNumber.trim() !== "") {
     searchConditions.push({ regNumber: { $regex: regNumber, $options: "i" } });
   }
 
+  // Now searching on the nested fields
   if (make.trim() !== "") {
-    searchConditions.push({ make: { $regex: make, $options: "i" } });
+    searchConditions.push({ "vehicleRegistration.Make": { $regex: make, $options: "i" } });
   }
 
+  // Now searching on the nested fields
   if (model.trim() !== "") {
-    searchConditions.push({ model: { $regex: model, $options: "i" } });
+    searchConditions.push({ "vehicleRegistration.Model": { $regex: model, $options: "i" } });
   }
 
   if (customerName.trim() !== "") {
@@ -761,26 +743,21 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
     });
   }
 
-  // Add search conditions if any
   if (searchConditions.length > 0) {
     pipeline.push({
       $match: { $and: searchConditions },
     });
   }
 
-  // Count total
   const totalPipeline = [...pipeline, { $count: "total" }];
   const totalResult = await Quote.aggregate(totalPipeline);
   const total = totalResult[0]?.total || 0;
 
-  // Add pagination, sorting, and the corrected stage
   pipeline.push(
     { $sort: { updatedAt: -1, createdAt: -1 } },
     { $skip: skip },
     { $limit: parseInt(limit) },
 
-    // It replaces the 'user' field with a new object containing
-    // only the specified fields, while leaving all other fields intact.
     {
       $set: {
         user: {
@@ -840,7 +817,6 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
   const { rejectionReason } = req.body;
 
-  // Find the quote for the logged-in user and POPULATE the userId
   const quote = await Quote.findOne({
     _id: id,
     userId: req.user._id,
@@ -850,40 +826,29 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Quote not found.", 404));
   }
   
-  // --- STATE CHECKS: Check the quote's current state before validating the rejection reason. ---
-  
-  // Check if the quote has already been accepted. This is a terminal state.
   if (quote.clientDecision === "accepted") {
     return next(new ErrorResponse("This quote has already been accepted and cannot be rejected.", 400));
   }
   
-  // The user can now re-reject a quote if they previously rejected it.
-  // This check is removed to allow the action.
-  
-  // Check if the quote is the correct type for this action.
   if (quote.type !== 'manual') {
     return next(new ErrorResponse("Only manual quotes can be rejected by the client.", 400));
   }
 
-  // Check if the quote has been reviewed by an admin.
   if (!quote.isReviewedByAdmin) {
     return next(new ErrorResponse("This quote has not yet been reviewed and cannot be rejected.", 400));
   }
-
-  // --- INPUT VALIDATION: Now that the state is valid, check for required inputs. ---
 
   if (!rejectionReason || rejectionReason.trim() === '') {
     return next(new ErrorResponse("A reason for rejection is required.", 400));
   }
 
-  // --- PERFORM ACTION: All checks have passed. ---
-
   quote.clientDecision = "rejected";
   quote.rejectionReason = rejectionReason;
-  quote.rejectedAt = new Date(); //Store the rejection timestamp
+  quote.rejectedAt = new Date();
   await quote.save();
 
   const client = quote.userId;
+  // This now checks the new adminOfferPrice field first for manual quotes, falling back to auto price.
   const price = quote.adminOfferPrice || quote.estimatedScrapPrice; 
 
   try {
@@ -894,9 +859,10 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
       templateData: {
         quoteType: quote.type,
         reg: quote.regNumber,
-        make: quote.make || "N/A",
-        model: quote.model || "N/A",
-        weight: quote.revenueWeight || "N/A",
+        // Accessing make, model, weight from the nested objects
+        make: quote.vehicleRegistration.Make || "N/A",
+        model: quote.vehicleRegistration.Model || "N/A",
+        weight: quote.otherVehicleData.KerbWeight || "N/A",
         price: price || "0",
         rejectionReason: quote.rejectionReason,
         clientName: `${client.firstName} ${client.lastName}`,
@@ -906,11 +872,7 @@ exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
     });
   } catch (emailError) {
     console.error("Failed to send rejection email:", emailError.message);
-    // Continue with the response even if the email fails
   }
 
   sendResponse(res, 200, "Quote successfully rejected.", { quote });
 });
-
-
-
