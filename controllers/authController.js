@@ -26,6 +26,7 @@ const getCookieOptions = () => {
     // and `SameSite=Lax` for local development.
     sameSite: isProduction ? 'None' : 'Lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, 
+    domain: isProduction ? '.sellyourcar.info' : undefined,
   };
 };
 
