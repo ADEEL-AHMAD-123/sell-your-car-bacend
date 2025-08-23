@@ -16,12 +16,18 @@ const JWT_EXPIRES_IN = '7d';
 const FRONTEND_URL = process.env.FRONTEND_URL; 
 
 // Helper function for cookie options
-const getCookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'None', 
-  maxAge: 7 * 24 * 60 * 60 * 1000, 
-});
+const getCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    // `secure` must be true in production to use `sameSite: 'None'`
+    secure: isProduction,
+    // Use `SameSite=None` for cross-origin requests in production,
+    // and `SameSite=Lax` for local development.
+    sameSite: isProduction ? 'None' : 'Lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
+  };
+};
 
 // -------------------- Register & Verification --------------------
 
