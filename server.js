@@ -1,4 +1,3 @@
-// server.js 
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -13,6 +12,10 @@ const logger = require('./middlewares/logger');
 dotenv.config();
 
 const app = express();
+
+
+// This will trust all proxies in front of your application.
+app.set('trust proxy', true);
 
 const allowedOrigins = process.env.FRONTEND_URL.split(',');
 
