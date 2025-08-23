@@ -14,14 +14,24 @@ dotenv.config();
 
 const app = express();
 
-// --- START: Corrected CORS configuration ---
+// --- START: CORS configuration ---
+const allowedOrigins = process.env.FRONTEND_URL.split(',');
+
 const corsOptions = {
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-    optionsSuccessStatus: 200
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true); 
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-// --- END: Corrected CORS configuration ---
+// --- END: CORS configuration ---
 
 // Other Middlewares
 app.use(cookieParser());
