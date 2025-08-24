@@ -1,31 +1,29 @@
 // authController.js file
-const User = require('../models/User');
-const Settings = require('../models/Settings');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const catchAsyncErrors = require('../middlewares/catchAsyncErrors');
-const sendResponse = require('../utils/sendResponse');
-const ErrorResponse = require('../utils/errorResponse');
-const crypto = require('crypto');
-const sendEmail = require('../utils/emailService');
+const User = require("../models/User");
+const Settings = require("../models/Settings");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
+const sendResponse = require("../utils/sendResponse");
+const ErrorResponse = require("../utils/errorResponse");
+const crypto = require("crypto");
+const sendEmail = require("../utils/emailService");
 
-require('dotenv').config();
+require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = '7d';
-const FRONTEND_URL = process.env.FRONTEND_URL; 
+const JWT_EXPIRES_IN = "7d";
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // Helper function for cookie options
-// authController.js file
 const getCookieOptions = () => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    return {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'None' : 'Lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, 
-        domain: isProduction ? undefined : 'localhost',
-    };
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "None" : "Lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
 };
 
 // -------------------- Register & Verification --------------------
@@ -38,17 +36,17 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
   if (!firstName || !lastName || !email || !password || !phone) {
-    return next(new ErrorResponse('All fields are required.', 400));
+    return next(new ErrorResponse("All fields are required.", 400));
   }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new ErrorResponse('User already exists.', 400));
+    return next(new ErrorResponse("User already exists.", 400));
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const settings = await Settings.findOne() || await Settings.create({});
-  const emailVerificationToken = crypto.randomBytes(20).toString('hex');
+  const settings = (await Settings.findOne()) || (await Settings.create({}));
+  const emailVerificationToken = crypto.randomBytes(20).toString("hex");
 
   const user = await User.create({
     firstName,
@@ -58,35 +56,42 @@ exports.register = catchAsyncErrors(async (req, res, next) => {
     phone,
     checksLeft: settings.defaultChecks,
     originalChecks: settings.defaultChecks,
-    'verificationToken.email': emailVerificationToken,
-    'verificationToken.phone': 'temp-phone-token',
-    'isVerified.email': false,
-    'isVerified.phone': false,
+    "verificationToken.email": emailVerificationToken,
+    "verificationToken.phone": "temp-phone-token",
+    "isVerified.email": false,
+    "isVerified.phone": false,
   });
-  
 
   const verificationURL = `${FRONTEND_URL}/verify-email/${emailVerificationToken}`;
 
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Email Verification for SellYourCar',
-      templateName: 'verificationEmail', 
+      subject: "Email Verification for SellYourCar",
+      templateName: "verificationEmail",
       templateData: {
         verificationURL,
-        user: { firstName: user.firstName, lastName: user.lastName }
-      }
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
     });
 
-    sendResponse(res, 201, 'User registered successfully. A verification email has been sent to your inbox.', {});
-    
+    sendResponse(
+      res,
+      201,
+      "User registered successfully. A verification email has been sent to your inbox.",
+      {}
+    );
   } catch (err) {
     console.error(`[EMAIL ERROR] Email could not be sent: ${err.message}`);
     await User.deleteOne({ _id: user._id });
-    return next(new ErrorResponse('Error sending verification email. Please try again.', 500));
+    return next(
+      new ErrorResponse(
+        "Error sending verification email. Please try again.",
+        500
+      )
+    );
   }
 });
-
 
 /**
  * Verifies a user's email using the token from the verification link.
@@ -96,30 +101,45 @@ exports.verifyEmail = catchAsyncErrors(async (req, res, next) => {
   const { token } = req.params;
 
   const user = await User.findOne({
-    'verificationToken.email': token
+    "verificationToken.email": token,
   });
-  
+
   // New: Check if the user is already verified before throwing a token error.
   if (!user) {
     // If the user is not found, we check if a user with that token (even if it's been cleared)
     // has a verified email. This prevents an error message when a user clicks the link twice.
     const alreadyVerifiedUser = await User.findOne({
-      'isVerified.email': true,
-      'verificationToken.email': null
+      "isVerified.email": true,
+      "verificationToken.email": null,
     });
     if (alreadyVerifiedUser) {
-        return sendResponse(res, 200, 'Your email is already verified. You can now log in.', {});
+      return sendResponse(
+        res,
+        200,
+        "Your email is already verified. You can now log in.",
+        {}
+      );
     }
 
     // If no user is found and the email is not already verified, the token is invalid.
-    return next(new ErrorResponse('Invalid or expired verification token. Please request a new verification email.', 400));
+    return next(
+      new ErrorResponse(
+        "Invalid or expired verification token. Please request a new verification email.",
+        400
+      )
+    );
   }
 
   user.isVerified.email = true;
   user.verificationToken.email = null;
   await user.save();
-  
-  sendResponse(res, 200, 'Email verified successfully. You can now log in.', {});
+
+  sendResponse(
+    res,
+    200,
+    "Email verified successfully. You can now log in.",
+    {}
+  );
 });
 
 /**
@@ -130,38 +150,48 @@ exports.resendVerificationEmail = catchAsyncErrors(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    return next(new ErrorResponse('No user found with that email address.', 404));
+    return next(
+      new ErrorResponse("No user found with that email address.", 404)
+    );
   }
 
   if (user.isVerified.email) {
-    return next(new ErrorResponse('This email is already verified.', 400));
+    return next(new ErrorResponse("This email is already verified.", 400));
   }
 
-  const emailVerificationToken = crypto.randomBytes(20).toString('hex');
+  const emailVerificationToken = crypto.randomBytes(20).toString("hex");
   user.verificationToken.email = emailVerificationToken;
   await user.save({ validateBeforeSave: false });
-
 
   const verificationURL = `${FRONTEND_URL}/verify-email/${emailVerificationToken}`;
 
   try {
     await sendEmail({
       to: user.email,
-      subject: 'New Email Verification Link for SellYourCar',
-      templateName: 'verificationEmail',
+      subject: "New Email Verification Link for SellYourCar",
+      templateName: "verificationEmail",
       templateData: {
         verificationURL,
-        user: { firstName: user.firstName, lastName: user.lastName }
-      }
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
     });
 
-    sendResponse(res, 200, 'A new verification email has been sent to your inbox.', {});
+    sendResponse(
+      res,
+      200,
+      "A new verification email has been sent to your inbox.",
+      {}
+    );
   } catch (err) {
     console.error(`[EMAIL ERROR] Email could not be sent: ${err.message}`);
-    return next(new ErrorResponse('Error sending verification email. Please try again.', 500));
+    return next(
+      new ErrorResponse(
+        "Error sending verification email. Please try again.",
+        500
+      )
+    );
   }
 });
-
 
 // -------------------- Login --------------------
 
@@ -173,30 +203,34 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return next(new ErrorResponse('Email and password are required.', 400));
+    return next(new ErrorResponse("Email and password are required.", 400));
   }
 
   const user = await User.findOne({ email });
   if (!user) {
-    return next(new ErrorResponse('Invalid credentials.', 401));
+    return next(new ErrorResponse("Invalid credentials.", 401));
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return next(new ErrorResponse('Invalid credentials.', 401));
+    return next(new ErrorResponse("Invalid credentials.", 401));
   }
-  
+
   // Only check for email verification. Phone verification is not a strict requirement for login.
   if (!user.isVerified.email) {
-    return next(new ErrorResponse('Please verify your email address to log in.', 403));
+    return next(
+      new ErrorResponse("Please verify your email address to log in.", 403)
+    );
   }
 
-  const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  res.cookie('token', token, getCookieOptions());
+  const token = jwt.sign({ id: user._id }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
+  res.cookie("token", token, getCookieOptions());
 
-  console.log(`[LOGIN] User logged in: ${user.email}`);
 
-  sendResponse(res, 200, 'Login successful', {
+  sendResponse(res, 200, "Login successful", {
+    token: token,
     user: {
       id: user._id,
       firstName: user.firstName,
@@ -213,19 +247,19 @@ exports.login = catchAsyncErrors(async (req, res, next) => {
 
 // -------------------- Logout --------------------
 exports.logout = (req, res) => {
-  res.clearCookie('token');
-  console.log('[LOGOUT] User logged out.');
-  sendResponse(res, 200, 'Logged out successfully');
+  res.clearCookie("token");
+  console.log("[LOGOUT] User logged out.");
+  sendResponse(res, 200, "Logged out successfully");
 };
 
 // -------------------- Get Logged-in User --------------------
 exports.getLoggedInUser = catchAsyncErrors(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select('-password');
+  const user = await User.findById(req.user.id).select("-password");
   if (!user) {
-    return next(new ErrorResponse('User not found.', 404));
+    return next(new ErrorResponse("User not found.", 404));
   }
-  
-  sendResponse(res, 200, 'User data fetched successfully.', { user });
+
+  sendResponse(res, 200, "User data fetched successfully.", { user });
 });
 
 // -------------------- Forgot Password --------------------
@@ -239,36 +273,43 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    return next(new ErrorResponse('No user found with that email address.', 404));
+    return next(
+      new ErrorResponse("No user found with that email address.", 404)
+    );
   }
 
   const resetToken = user.getResetPasswordToken();
   await user.save({ validateBeforeSave: false });
-
 
   const resetURL = `${FRONTEND_URL}/reset-password/${resetToken}`;
 
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset Token',
-      templateName: 'passwordReset', 
+      subject: "Password Reset Token",
+      templateName: "passwordReset",
       templateData: {
         resetURL,
-        user: { firstName: user.firstName, lastName: user.lastName }
-      }
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
     });
 
-    sendResponse(res, 200, 'Password reset email sent.', {});
+    sendResponse(res, 200, "Password reset email sent.", {});
   } catch (err) {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save({ validateBeforeSave: false });
-    console.error(`[EMAIL ERROR] Password reset email could not be sent: ${err.message}`);
-    return next(new ErrorResponse('Error sending password reset email. Please try again later.', 500));
+    console.error(
+      `[EMAIL ERROR] Password reset email could not be sent: ${err.message}`
+    );
+    return next(
+      new ErrorResponse(
+        "Error sending password reset email. Please try again later.",
+        500
+      )
+    );
   }
 });
-
 
 // -------------------- Reset Password (from email link) --------------------
 
@@ -282,9 +323,9 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
   const { password } = req.body;
 
   const resetPasswordToken = crypto
-    .createHash('sha256')
+    .createHash("sha256")
     .update(token)
-    .digest('hex');
+    .digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken,
@@ -292,7 +333,9 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
   });
 
   if (!user) {
-    return next(new ErrorResponse('Invalid or expired password reset token.', 400));
+    return next(
+      new ErrorResponse("Invalid or expired password reset token.", 400)
+    );
   }
 
   user.password = await bcrypt.hash(password, 10);
@@ -300,7 +343,7 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
   user.resetPasswordExpire = undefined;
   await user.save();
 
-  sendResponse(res, 200, 'Password updated successfully.', {});
+  sendResponse(res, 200, "Password updated successfully.", {});
 });
 
 // -------------------- Update Password (when logged in) --------------------
@@ -311,16 +354,16 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
  */
 exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
-  
+
   const user = await User.findById(req.user.id);
 
   if (!user) {
-    return next(new ErrorResponse('User not found.', 404));
+    return next(new ErrorResponse("User not found.", 404));
   }
 
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
-    return next(new ErrorResponse('Incorrect current password.', 401));
+    return next(new ErrorResponse("Incorrect current password.", 401));
   }
 
   user.password = await bcrypt.hash(newPassword, 10);
@@ -330,20 +373,21 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Your Password Has Been Changed',
-      templateName: 'passwordChanged',
+      subject: "Your Password Has Been Changed",
+      templateName: "passwordChanged",
       templateData: {
-        user: { firstName: user.firstName, lastName: user.lastName }
-      }
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
     });
   } catch (err) {
-    console.error(`[EMAIL ERROR] Password changed notification email could not be sent: ${err.message}`);
+    console.error(
+      `[EMAIL ERROR] Password changed notification email could not be sent: ${err.message}`
+    );
     // We don't block the user's password change if the email fails, we just log the error.
   }
 
-  sendResponse(res, 200, 'Password updated successfully.', {});
+  sendResponse(res, 200, "Password updated successfully.", {});
 });
-
 
 // -------------------- Phone Verification --------------------
 
@@ -355,13 +399,13 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
 exports.sendPhoneVerificationOTP = catchAsyncErrors(async (req, res, next) => {
   const user = await User.findById(req.user.id);
   if (!user) {
-    return next(new ErrorResponse('User not found.', 404));
+    return next(new ErrorResponse("User not found.", 404));
   }
 
   if (user.isVerified.phone) {
-    return next(new ErrorResponse('Phone number is already verified.', 400));
+    return next(new ErrorResponse("Phone number is already verified.", 400));
   }
-  
+
   // Generate a 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedOtp = await bcrypt.hash(otp, 10);
@@ -377,7 +421,7 @@ exports.sendPhoneVerificationOTP = catchAsyncErrors(async (req, res, next) => {
 
   console.log(`[PHONE VERIFICATION] OTP sent to ${user.phone}: ${otp}`);
 
-  sendResponse(res, 200, 'Phone verification OTP has been sent.', {});
+  sendResponse(res, 200, "Phone verification OTP has been sent.", {});
 });
 
 /**
@@ -388,16 +432,19 @@ exports.verifyPhone = catchAsyncErrors(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   if (!user) {
-    return next(new ErrorResponse('User not found.', 404));
+    return next(new ErrorResponse("User not found.", 404));
   }
 
-  if (!user.verificationToken.phone || user.verificationToken.phoneExpire < Date.now()) {
-    return next(new ErrorResponse('Invalid or expired OTP.', 400));
+  if (
+    !user.verificationToken.phone ||
+    user.verificationToken.phoneExpire < Date.now()
+  ) {
+    return next(new ErrorResponse("Invalid or expired OTP.", 400));
   }
 
   const isMatch = await bcrypt.compare(otp, user.verificationToken.phone);
   if (!isMatch) {
-    return next(new ErrorResponse('Invalid or incorrect OTP.', 400));
+    return next(new ErrorResponse("Invalid or incorrect OTP.", 400));
   }
 
   user.isVerified.phone = true;
@@ -405,5 +452,5 @@ exports.verifyPhone = catchAsyncErrors(async (req, res, next) => {
   user.verificationToken.phoneExpire = null;
   await user.save();
 
-  sendResponse(res, 200, 'Phone number verified successfully.', {});
+  sendResponse(res, 200, "Phone number verified successfully.", {});
 });
