@@ -17,17 +17,17 @@ const app = express();
 // This will trust all proxies in front of your application.
 app.set('trust proxy', true);
 
-const allowedOrigins = process.env.FRONTEND_URL.split(',');
+const allowedOrigins = process.env.FRONTEND_CORS_URLS.split(',');
 
 const corsOptions = {
   origin: (origin, callback) => {
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    } else { 
+      callback(new Error('Not allowed by CORS'));  
     }
-  },
-  credentials: true,
+  }, 
+  credentials: true,  
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"], 
   optionsSuccessStatus: 200
