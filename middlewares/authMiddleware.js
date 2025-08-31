@@ -7,9 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware: Require login
 const protect = async (req, res, next) => {
-  console.log("--- Inside protect middleware ---");
-  console.log("Incoming headers:", req.headers);
-  console.log("Parsed cookies:", req.cookies);
+
 
   let token; // 1. Check for token in cookies first
 

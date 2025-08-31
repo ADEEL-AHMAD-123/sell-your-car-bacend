@@ -159,6 +159,9 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 });
 
 
+// Make sure to import the helper function at the top of your quoteController.js file
+const { getOptimizedImageUrl } = require("../utils/cloudinaryUtils");
+
 // @desc    Submit a manual quote
 // @route   POST /api/quote/manual-quote
 // @access  Private
@@ -209,7 +212,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   } = existingQuote;
 
   // === Step 2: Handle known cases and prevent further updates if the quote is in a state that disallows new manual requests ===
-  
+
   const initialClientDecision = clientDecision;
 
   if (clientDecision === "accepted") {
@@ -253,7 +256,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   }
 
   // === Step 3: Update manual fields ===
-  // Note: These fields are now being set on the nested 'vehicleRegistration' object
   if (!existingQuote.vehicleRegistration.Make && make) existingQuote.vehicleRegistration.Make = make;
   if (!existingQuote.vehicleRegistration.Model && model) existingQuote.vehicleRegistration.Model = model;
   if (!existingQuote.vehicleRegistration.FuelType && fuelType) existingQuote.vehicleRegistration.FuelType = fuelType;
@@ -262,8 +264,11 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
 
   if (message) existingQuote.manualDetails.message = message;
   
+  // 💡 Here is the updated logic for image optimization
   if (Array.isArray(req.files) && req.files.length > 0) {
-    const uploadedImages = req.files.map(file => file.path);
+    // Map over the uploaded files and optimize each image URL
+    const uploadedImages = req.files.map(file => getOptimizedImageUrl(file.path));
+    
     // Ensure we don't exceed 6 images, append new ones
     existingQuote.manualDetails.images = [...(existingQuote.manualDetails.images || []), ...uploadedImages].slice(0, 6);
   }

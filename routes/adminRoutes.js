@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   getUsers, 
   getUser, 
-  updateUser,
+  updateUser, 
   deleteUser,
   getAnalyticsOverview,
   getSettings, 
