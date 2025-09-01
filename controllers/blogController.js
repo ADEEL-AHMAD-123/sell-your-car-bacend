@@ -97,80 +97,88 @@ exports.getBlog = asyncHandler(async (req, res, next) => {
 
 
 
-
 // @desc      Create a new blog post
 // @route     POST /api/blogs
 // @access    Private/Admin
 exports.createBlog = asyncHandler(async (req, res, next) => {
-    const { title, content, metaDescription, category, keywords, imageAltText, featured } = req.body;
+  const { title, content, metaDescription, category, keywords, imageAltText, featured } = req.body;
 
-    if (!req.file) {
-        return next(new ErrorResponse("Please upload a featured image", 400));
-    }
+  if (!req.file) {
+    return next(new ErrorResponse("Please upload a featured image", 400));
+  }
+  
+  // FIX: Ensure content is a string before saving
+  const formattedContent = Array.isArray(content) ? content.join("") : content;
 
-    const optimizedImageUrl = getOptimizedImageUrl(req.file.path);
-    
-    const blogData = {
-        title,
-        content,
-        metaDescription,
-        category,
-        keywords: keywords ? keywords.split(",").map(kw => kw.trim()) : [],
-        author: req.user.id,
-        image: {
-            url: optimizedImageUrl, // Store the optimized URL
-            altText: imageAltText,
-        },
-        featured,
-    };
+  const optimizedImageUrl = getOptimizedImageUrl(req.file.path);
 
-    const blog = await Blog.create(blogData);
-    sendResponse(res, 201, "Blog post created successfully", { blog });
+  const blogData = {
+    title,
+    content: formattedContent,
+    metaDescription,
+    category,
+    keywords: keywords ? keywords.split(",").map((kw) => kw.trim()) : [],
+    author: req.user.id,
+    image: {
+      url: optimizedImageUrl, // Store the optimized URL
+      altText: imageAltText,
+    },
+    featured,
+  };
+
+  const blog = await Blog.create(blogData);
+  sendResponse(res, 201, "Blog post created successfully", { blog });
 });
 
 // @desc      Update a blog post
 // @route     PUT /api/blogs/:id
 // @access    Private/Admin
 exports.updateBlog = asyncHandler(async (req, res, next) => {
-    let blog = await Blog.findById(req.params.id);
+  let blog = await Blog.findById(req.params.id);
 
-    if (!blog) {
-        return next(new ErrorResponse(`Blog post not found with ID of ${req.params.id}`, 404));
-    }
+  if (!blog) {
+    return next(new ErrorResponse(`Blog post not found with ID of ${req.params.id}`, 404));
+  }
 
-    const updateData = { ...req.body };
+  const updateData = { ...req.body };
+  
+  // FIX: Ensure content is a string before saving
+  if (Array.isArray(updateData.content)) {
+    updateData.content = updateData.content.join("");
+  }
 
-    if (updateData.keywords) {
-        updateData.keywords = updateData.keywords.split(",").map(kw => kw.trim());
-    } else {
-        updateData.keywords = [];
-    }
+  if (updateData.keywords) {
+    updateData.keywords = updateData.keywords.split(",").map((kw) => kw.trim());
+  } else {
+    updateData.keywords = [];
+  }
 
-    if (req.file) {
-        const optimizedImageUrl = getOptimizedImageUrl(req.file.path);
-        
-        updateData.image = {
-            url: optimizedImageUrl, // Store the new optimized URL
-            altText: updateData.imageAltText || blog.image?.altText || '',
-        };
-    } else if (updateData.imageAltText !== undefined) {
-        updateData.image = {
-            ...blog.image,
-            altText: updateData.imageAltText
-        };
-    }
-    
-    delete updateData.imageAltText;
-    
-    updateData.author = req.user.id;
+  if (req.file) {
+    const optimizedImageUrl = getOptimizedImageUrl(req.file.path);
 
-    blog = await Blog.findByIdAndUpdate(req.params.id, updateData, {
-        new: true,
-        runValidators: true,
-    }).populate({ path: "author", select: "firstName lastName" });
+    updateData.image = {
+      url: optimizedImageUrl, // Store the new optimized URL
+      altText: updateData.imageAltText || blog.image?.altText || "",
+    };
+  } else if (updateData.imageAltText !== undefined) {
+    updateData.image = {
+      ...blog.image,
+      altText: updateData.imageAltText,
+    };
+  }
 
-    sendResponse(res, 200, "Blog post updated successfully", { blog });
+  delete updateData.imageAltText;
+
+  updateData.author = req.user.id;
+
+  blog = await Blog.findByIdAndUpdate(req.params.id, updateData, {
+    new: true,
+    runValidators: true,
+  }).populate({ path: "author", select: "firstName lastName" });
+
+  sendResponse(res, 200, "Blog post updated successfully", { blog });
 });
+
 
 // @desc      Delete a blog post
 // @route     DELETE /api/blogs/:id
