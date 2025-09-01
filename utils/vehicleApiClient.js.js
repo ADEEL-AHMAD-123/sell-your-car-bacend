@@ -4,71 +4,35 @@ const ErrorResponse = require("../utils/errorResponse");
 const dotenv = require('dotenv');
 dotenv.config();
 
-// The base URL for the API.
 const VEHICLE_API_URL = 'https://api.checkcardetails.co.uk';
 const API_KEY = process.env.VEHICLE_API_KEY;
 
 /**
  * Normalizes the raw API response into a clean object that matches our new schema.
- * @param {object} apiData - The raw response from the Check Car Details API.
- * @returns {object} A normalized object with only the necessary fields.
  */
 const normalizeVehicleData = (apiData) => {
   if (!apiData || !apiData.VehicleRegistration) {
     throw new ErrorResponse('Incomplete data from API.', 500);
   }
 
-  // Extract all fields from the VehicleRegistration object
   const vehicleRegistration = {
+    // ... all the fields you need from VehicleRegistration
     DateOfLastUpdate: apiData.VehicleRegistration.DateOfLastUpdate,
     Colour: apiData.VehicleRegistration.Colour,
     VehicleClass: apiData.VehicleRegistration.VehicleClass,
-    CertificateOfDestructionIssued: apiData.VehicleRegistration.CertificateOfDestructionIssued,
-    EngineNumber: apiData.VehicleRegistration.EngineNumber,
-    EngineCapacity: apiData.VehicleRegistration.EngineCapacity,
-    TransmissionCode: apiData.VehicleRegistration.TransmissionCode,
-    Exported: apiData.VehicleRegistration.Exported,
     YearOfManufacture: apiData.VehicleRegistration.YearOfManufacture,
     WheelPlan: apiData.VehicleRegistration.WheelPlan,
-    DateExported: apiData.VehicleRegistration.DateExported,
-    Scrapped: apiData.VehicleRegistration.Scrapped,
     Transmission: apiData.VehicleRegistration.Transmission,
-    DateFirstRegisteredUk: apiData.VehicleRegistration.DateFirstRegisteredUk,
     Model: apiData.VehicleRegistration.Model,
-    GearCount: apiData.VehicleRegistration.GearCount,
-    ImportNonEu: apiData.VehicleRegistration.ImportNonEu,
-    PreviousVrmGb: apiData.VehicleRegistration.PreviousVrmGb,
-    GrossWeight: apiData.VehicleRegistration.GrossWeight,
-    DoorPlanLiteral: apiData.VehicleRegistration.DoorPlanLiteral,
-    MvrisModelCode: apiData.VehicleRegistration.MvrisModelCode,
-    Vin: apiData.VehicleRegistration.Vin,
     Vrm: apiData.VehicleRegistration.Vrm,
-    DateFirstRegistered: apiData.VehicleRegistration.DateFirstRegistered,
-    DateScrapped: apiData.VehicleRegistration.DateScrapped,
-    DoorPlan: apiData.VehicleRegistration.DoorPlan,
-    YearMonthFirstRegistered: apiData.VehicleRegistration.YearMonthFirstRegistered,
-    VinLast5: apiData.VehicleRegistration.VinLast5,
-    VehicleUsedBeforeFirstRegistration: apiData.VehicleRegistration.VehicleUsedBeforeFirstRegistration,
-    MaxPermissibleMass: apiData.VehicleRegistration.MaxPermissibleMass,
     Make: apiData.VehicleRegistration.Make,
-    MakeModel: apiData.VehicleRegistration.MakeModel,
-    TransmissionType: apiData.VehicleRegistration.TransmissionType,
-    SeatingCapacity: apiData.VehicleRegistration.SeatingCapacity,
     FuelType: apiData.VehicleRegistration.FuelType,
-    Co2Emissions: apiData.VehicleRegistration.Co2Emissions,
-    Imported: apiData.VehicleRegistration.Imported,
-    MvrisMakeCode: apiData.VehicleRegistration.MvrisMakeCode,
-    PreviousVrmNi: apiData.VehicleRegistration.PreviousVrmNi,
-    VinConfirmationFlag: apiData.VehicleRegistration.VinConfirmationFlag,
   };
 
-  // Extract and simplify other key data points
   const otherVehicleData = {
     KerbWeight: apiData.Dimensions.KerbWeight,
     BodyStyle: apiData.SmmtDetails.BodyStyle,
-    EuroStatus: apiData.General.EuroStatus,
     NumberOfDoors: apiData.SmmtDetails.NumberOfDoors,
-    NumberOfAxles: apiData.Dimensions.NumberOfAxles,
   };
 
   return {
@@ -79,8 +43,6 @@ const normalizeVehicleData = (apiData) => {
 
 /**
  * Fetches vehicle data from the new API and returns a normalized object.
- * @param {string} registrationNumber - The vehicle registration number (VRM).
- * @returns {Promise<object>} A promise that resolves to the normalized vehicle data.
  */
 const fetchVehicleData = async (registrationNumber) => {
   if (!API_KEY) {
@@ -88,11 +50,10 @@ const fetchVehicleData = async (registrationNumber) => {
   }
 
   try {
-    // Corrected the URL path based on your API documentation example.
     const response = await axios.get(
       `${VEHICLE_API_URL}/vehicledata/ukvehicledata`, {
         params: {
-          apikey: API_KEY, // The documentation uses 'apikey', so this is also updated.
+          apikey: API_KEY,
           vrm: registrationNumber.toUpperCase()
         }
       }
@@ -101,26 +62,30 @@ const fetchVehicleData = async (registrationNumber) => {
     const apiData = response.data;
     console.log('✅ [Vehicle API Response]', apiData);
 
-    // Check for a valid response before normalizing
-    if (!apiData || !apiData.VehicleRegistration?.Make) {
-      throw new ErrorResponse('Vehicle not found or data is incomplete.', 404);
+    // This check handles cases where the API returns a 200 but the data is empty.
+    if (!apiData || Object.keys(apiData).length === 0) {
+      throw new ErrorResponse('Vehicle not found. The API returned no data.', 404);
     }
-
-    // Normalize the data to match our schema before returning
+    
     return normalizeVehicleData(apiData);
   } catch (error) {
     const status = error.response?.status || 500;
-    const message = error.response?.data?.error || error.message || 'Failed to fetch vehicle data.';
+    const message = error.response?.data?.message || error.message;
 
-    console.error('❌ [Vehicle API Error]', {
-      status,
-      message,
-      raw: error.response?.data || error.message
-    });
+    console.error('❌ [Vehicle API Error]', { status, message });
+    
+    // Check for specific HTTP status codes
+    if (status === 404) {
+      // Throw a specific 404 error with a clear message
+      throw new ErrorResponse("Vehicle not found or invalid registration.", 404);
+    }
+    
+    if (status === 401 || status === 403) {
+      throw new ErrorResponse("API authentication failed. Please check the API key.", 500);
+    }
 
-    const err = new Error(message);
-    err.statusCode = status;
-    throw err;
+    // Handle all other errors
+    throw new ErrorResponse(message || 'An unexpected error occurred with the vehicle API.', status);
   }
 };
 

@@ -1,21 +1,40 @@
+// File: controllers/quoteController.js
 const User = require("../models/User");
 const Quote = require("../models/Quote");
 const { fetchVehicleData } = require("../utils/vehicleApiClient.js");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const sendResponse = require("../utils/sendResponse");
-const sendEmail = require("../utils/emailService");
 const ErrorResponse = require("../utils/errorResponse");
 const Settings = require("../models/Settings");
+const { getOptimizedImageUrl } = require("../utils/cloudinaryUtils");
+
+// Function to validate UK registration number format
+const isValidUkRegNumber = (reg) => {
+  // A robust regex for common UK registration number formats
+  const pattern = /^(?:[A-Z]{2}[0-9]{2}|[A-Z][0-9]{1,3}|[A-Z]{3})[A-Z]?\s?[A-Z0-9]{1,3}$/i;
+  return pattern.test(reg);
+};
 
 // @desc Generate auto quote from reg number
-// @route POST /api/quote/auto
+// @route POST /api/quote/get
 // @access Private
 exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   const { regNumber } = req.body;
   const user = req.user;
 
+  // Input validation
   if (!regNumber) {
     return next(new ErrorResponse("Registration number is required.", 400));
+  }
+  
+  const reg = regNumber.trim().toUpperCase();
+
+  // Validate the format of the registration number
+  if (!isValidUkRegNumber(reg)) {
+    return sendResponse(res, 400, "Please enter a valid UK registration number.", {
+        status: "invalid_reg_format",
+        from: "server_validation"
+    });
   }
 
   const userId = user?._id;
@@ -23,31 +42,58 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorResponse("Unauthorized. Please log in.", 401));
   }
 
-  const reg = regNumber.trim().toUpperCase();
-
-  // === STEP 1: Check if any accepted + collected quote exists
+  // === STEP 1: Check for existing accepted + collected quote
   const acceptedQuote = await Quote.findOne({
     userId,
     regNumber: reg,
     clientDecision: "accepted",
   }).sort({ createdAt: -1 });
 
-  if (acceptedQuote) {
-    const collected = acceptedQuote.collectionDetails?.collected;
-    if (collected) {
-      return sendResponse(res, 200, "You’ve already accepted and collected a quote for this vehicle.", {
-        quote: acceptedQuote,
-        status: "accepted_collected",
-      });
-    }
+  if (acceptedQuote && acceptedQuote.collectionDetails?.collected) {
+    return sendResponse(res, 200, "You’ve already accepted and collected a quote for this vehicle.", {
+      quote: acceptedQuote,
+      status: "accepted_collected",
+    });
+  }
 
+  if (acceptedQuote && !acceptedQuote.collectionDetails?.collected) {
     return sendResponse(res, 200, "You’ve already accepted a quote. Pending collection.", {
       quote: acceptedQuote,
       status: "accepted_pending_collection",
     });
   }
 
-  // === STEP 2: Check if auto quote exists
+  // === STEP 2: Check for a pending, reviewed, or rejected manual quote
+  const existingManualQuote = await Quote.findOne({
+    userId,
+    regNumber: reg,
+    type: "manual",
+  }).sort({ createdAt: -1 });
+
+  if (existingManualQuote) {
+    if (existingManualQuote.clientDecision === 'rejected') {
+      return sendResponse(res, 200, "Your previous manual quote was rejected. You can submit a new request.", {
+        quote: existingManualQuote,
+        status: "manual_previously_rejected",
+      });
+    }
+    
+    if (!existingManualQuote.isReviewedByAdmin) {
+      return sendResponse(res, 200, "Your manual quote request is still under admin review.", {
+        quote: existingManualQuote,
+        status: "manual_pending_review",
+      });
+    }
+
+    if (existingManualQuote.isReviewedByAdmin && existingManualQuote.adminOfferPrice) {
+      return sendResponse(res, 200, "A reviewed manual quote is awaiting your response.", {
+        quote: existingManualQuote,
+        status: "manual_reviewed",
+      });
+    }
+  }
+
+  // === STEP 3: Check if auto quote exists
   const existingAutoQuote = await Quote.findOne({
     userId,
     regNumber: reg,
@@ -62,41 +108,6 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
     });
   }
 
-  // === STEP 3: Check for a pending, reviewed, or rejected manual quote
-  const existingManualQuote = await Quote.findOne({
-    userId,
-    regNumber: reg,
-    type: "manual",
-  }).sort({ createdAt: -1 });
-
-  if (existingManualQuote) {
-    const { isReviewedByAdmin, adminOfferPrice, clientDecision } = existingManualQuote;
-
-    // Handle rejected case first
-    if (clientDecision === 'rejected') {
-      return sendResponse(res, 200, "Your previous manual quote was rejected. You can submit a new request.", {
-        quote: existingManualQuote,
-        status: "manual_previously_rejected",
-      });
-    }
-    
-    // Logic for pending review
-    if (!isReviewedByAdmin) {
-      return sendResponse(res, 200, "Your manual quote request is still under admin review.", {
-        quote: existingManualQuote,
-        status: "manual_pending_review",
-      });
-    }
-
-    // Logic for reviewed but not decided
-    if (isReviewedByAdmin && adminOfferPrice) {
-      return sendResponse(res, 200, "A reviewed manual quote is awaiting your response.", {
-        quote: existingManualQuote,
-        status: "manual_reviewed",
-      });
-    }
-  }
-
   // === STEP 4: Check user's remaining DVLA checks before fetching data
   if (user.checksLeft <= 0) {
     return sendResponse(res, 403, "You have exhausted your free DVLA checks. Please contact our support team to get more.", {
@@ -105,11 +116,18 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   }
 
   // === STEP 5: Fetch DVLA data
-  const vehicle = await fetchVehicleData(reg);
-
-  // The vehicle object is now nested. Access Vrm to check if the vehicle was found.
-  if (!vehicle || !vehicle.vehicleRegistration?.Vrm) {
-    return next(new ErrorResponse("Vehicle not found or invalid registration.", 404));
+  let vehicle;
+  try {
+    vehicle = await fetchVehicleData(reg);
+  } catch (error) {
+    if (error.statusCode === 404) {
+      return sendResponse(res, 404, "Vehicle not found. Please double-check the registration number or try again later.", {
+        status: "vehicle_not_found",
+        from: "api_call"
+      });
+    }
+    // Pass other errors to the general error handler
+    return next(error);
   }
 
   // === STEP 6: Decrement the DVLA check count and save the user
@@ -122,9 +140,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 
   // Access the weight from the new nested object
   const weight = vehicle.otherVehicleData?.KerbWeight;
-  const estimatedPrice = weight
-    ? parseFloat((weight * scrapRatePerKg).toFixed(2))
-    : null;
+  const estimatedPrice = weight ? parseFloat((weight * scrapRatePerKg).toFixed(2)) : null;
 
   // === STEP 7: Build auto quote using the new nested schema structure
   const quoteData = {
@@ -133,7 +149,6 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
     type: "auto",
     estimatedScrapPrice: estimatedPrice,
     dvlaFetchedAt: new Date(),
-    // Assign the normalized vehicle data directly to the nested fields
     vehicleRegistration: vehicle.vehicleRegistration,
     otherVehicleData: vehicle.otherVehicleData,
   };
@@ -159,8 +174,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-// Make sure to import the helper function at the top of your quoteController.js file
-const { getOptimizedImageUrl } = require("../utils/cloudinaryUtils");
+
 
 // @desc    Submit a manual quote
 // @route   POST /api/quote/manual-quote
@@ -249,7 +263,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         "Your manual quote has been reviewed and is awaiting your decision. No further changes can be submitted at this time.",
         {
           quote: existingQuote,
-          status: "manual_reviewed",
+          status: "manual_reviewed", 
         }
       );
     }
