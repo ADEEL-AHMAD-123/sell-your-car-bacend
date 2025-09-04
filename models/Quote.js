@@ -1,4 +1,3 @@
-// File: models/Quote.js
 const mongoose = require('mongoose');
 
 // Define a schema for the nested 'VehicleRegistration' object
@@ -110,6 +109,7 @@ const quoteSchema = new mongoose.Schema({
     contactNumber: { type: String },
     address: { type: String },
     collected: { type: Boolean, default: false },
+    collectedAt: { type: Date }, // Added new field
   },
 
   // Vehicle data from the API response
@@ -121,20 +121,26 @@ const quoteSchema = new mongoose.Schema({
 });
 
 // --- Mongoose Indexes for improved query performance ---
-// Index on userId for fast lookup of a user's quotes
+
 quoteSchema.index({ userId: 1 });
-
-// Index on regNumber for fast lookup by vehicle
 quoteSchema.index({ regNumber: 1 });
-
-// Compound index for the most common query: finding a specific quote for a specific user
 quoteSchema.index({ userId: 1, regNumber: 1 });
-
-// Index on clientDecision to quickly filter quotes by status
 quoteSchema.index({ clientDecision: 1 });
-
-// Index on type to quickly filter between auto and manual quotes
 quoteSchema.index({ type: 1 });
+
+
+
+// Compound index to support the main 'getQuote' function
+quoteSchema.index({ userId: 1, regNumber: 1, clientDecision: 1 });
+
+// Compound index for the admin pending quotes
+quoteSchema.index({ type: 1, isReviewedByAdmin: 1, clientDecision: 1 });
+
+// Compound index for the admin accepted/collected quotes
+quoteSchema.index({ clientDecision: 1, 'collectionDetails.collected': 1 });
+
+// Compound index for searching on nested fields in admin panel
+quoteSchema.index({ 'vehicleRegistration.Make': 1, 'vehicleRegistration.Model': 1 });
 
 const Quote = mongoose.model('Quote', quoteSchema);
 module.exports = Quote;

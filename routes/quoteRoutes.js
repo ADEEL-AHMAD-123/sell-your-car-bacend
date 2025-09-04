@@ -1,16 +1,16 @@
-//file: routes/quoteRoutes.js
 const express = require('express');
 const router = express.Router();
 
 const {
-  getQuote,
-  submitManualQuote,
-  getPendingManualQuotes,
-  reviewManualQuote,
-  confirmQuoteWithCollection,
-  markAsCollected,
-  getAcceptedQuotes,
-  rejectQuote
+  getQuote,
+  submitManualQuote,
+  getPendingManualQuotes,
+  reviewManualQuote,
+  confirmQuoteWithCollection,
+  markAsCollected,
+  getAcceptedQuotes,
+  rejectQuote,
+  getCollectedQuotes
 } = require('../controllers/quoteController');
 
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
@@ -23,10 +23,10 @@ router.post('/get', protect, getQuote);
 
 // Submit manual quote request with images
 router.post(
-  '/manual-quote',
-  protect,
-  upload.array('images', 5),
-  submitManualQuote
+  '/manual-quote',
+  protect,
+  upload.array('images', 5),
+  submitManualQuote
 );
 
 // Client confirms quote by submitting collection details (decision + pickup info)
@@ -47,6 +47,9 @@ router.patch('/review-manual/:id', protect, adminOnly, reviewManualQuote);
 
 // Get All accepted quotes(manual and auto both)
 router.get('/accepted', protect, adminOnly, getAcceptedQuotes);
+
+// Get all collected quotes
+router.get('/collected', protect, adminOnly, getCollectedQuotes);
 
 // Mark collection as completed
 router.patch('/collection-status/:id', protect, adminOnly, markAsCollected);
