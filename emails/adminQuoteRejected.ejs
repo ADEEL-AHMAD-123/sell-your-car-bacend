@@ -1,234 +1,237 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Rejected Quote - Admin Notification</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            background-color: #f8f9fa;
-        }
-        
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Rejected Quote - Admin Notification</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333333;
+        background-color: #f8f9fa;
+    }
+
+    .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+        background: linear-gradient(135deg, #5dade2 0%, #3498db 100%);
+        color: #ffffff;
+        padding: 30px 20px;
+        text-align: center;
+    }
+
+    .header h1 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .header p {
+        font-size: 16px;
+        opacity: 0.9;
+    }
+
+    .content {
+        padding: 30px 20px;
+    }
+
+    .section {
+        margin-bottom: 30px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        border-left: 4px solid #3498db;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333333;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #666666;
+        flex: 1;
+    }
+
+    .info-value {
+        font-weight: 500;
+        color: #333333;
+        flex: 2;
+        text-align: right;
+    }
+
+    .price-highlight {
+        background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .button {
+        display: inline-block;
+        background-color: #3498db;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        margin-top: 20px;
+        text-align: center;
+        border: 1px solid #2980b9;
+    }
+
+    .footer {
+        background-color: #343a40;
+        color: #ffffff;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .footer a {
+        color: #3498db;
+        text-decoration: none;
+    }
+
+    @media only screen and (max-width: 600px) {
         .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            border-radius: 8px;
         }
-        
-        .header {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            color: #ffffff;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .header p {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
+
         .content {
-            padding: 30px 20px;
+            padding: 20px 15px;
         }
-        
-        .alert-box {
-            background-color: #dc3545;
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 18px;
-            font-weight: 600;
+
+        .header {
+            padding: 20px 15px;
         }
-        
-        .section {
-            margin-bottom: 30px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            border-left: 4px solid #e74c3c; /* Adjusted for rejection color */
+
+        .header h1 {
+            font-size: 20px;
         }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333333;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
+
         .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
         }
-        
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        
-        .info-label {
-            font-weight: 600;
-            color: #666666;
-            flex: 1;
-        }
-        
+
         .info-value {
-            font-weight: 500;
-            color: #333333;
-            flex: 2;
-            text-align: right;
+            text-align: left;
         }
-        
-        .price-highlight {
-            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .footer {
-            background-color: #343a40;
-            color: #ffffff;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-        }
-        
-        .footer a {
-            color: #e74c3c;
-            text-decoration: none;
-        }
-        
-        @media only screen and (max-width: 600px) {
-            .email-container {
-                margin: 10px;
-                border-radius: 8px;
-            }
-            
-            .content {
-                padding: 20px 15px;
-            }
-            
-            .header {
-                padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-            
-            .info-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .info-value {
-                text-align: left;
-            }
-        }
-    </style>
+    }
+</style>
+
 </head>
 <body>
-    <div class="email-container">
-        <div class="header">
-            <h1>❌ Quote Rejected!</h1>
-            <p>A client has rejected their <%= quoteType %> quote offer</p>
-        </div>
-        
-        <div class="content">
-            <div class="alert-box">
-                Quote Rejected - No Further Action Required
-            </div>
-            
-            <div class="section">
-                <div class="section-title">💰 Quote Details</div>
-                <div class="price-highlight">
-                    Offer Price: £<%= price %>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div class="info-row">
-                        <span class="info-label">Quote Type:</span>
-                        <span class="info-value"><%= quoteType.toUpperCase() %></span>
-                    </div>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Reason for Rejection:</span>
-                    <span class="info-value"><%= rejectionReason %></span>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">🚗 Vehicle Information</div>
-                <div class="info-row">
-                    <span class="info-label">Registration:</span>
-                    <span class="info-value"><%= reg %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Make & Model:</span>
-                    <span class="info-value"><%= make %> <%= model %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Weight:</span>
-                    <span class="info-value"><%= weight %> kg</span>
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">👤 Client Information</div>
-                <div class="info-row">
-                    <span class="info-label">Name:</span>
-                    <span class="info-value"><%= clientName %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span class="info-value"><%= clientEmail %></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Phone:</span>
-                    <span class="info-value"><%= clientPhone %></span>
-                </div>
-            </div>
-            
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <p style="margin: 0; color: #856404; font-weight: 500;">
-                    <strong>Next Steps:</strong> The client has rejected their quote offer. No further action is required from you.
-                </p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p><strong>SellYourCar</strong> - Admin Notification</p>
-            <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
+<div class="email-container">
+<div class="header">
+<h1>Quote Rejected!</h1>
+<p>A client has rejected their <%= quoteType %> quote offer</p>
+</div>
 
+    <div class="content">
+        <div class="section">
+            <div class="section-title">💰 Quote Details</div>
+            <div class="price-highlight">
+                Offer Price: £<%= price %>
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="info-row">
+                    <span class="info-label">Quote Type:</span>
+                    <span class="info-value"><%= quoteType.toUpperCase() %></span>
+                </div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Reason for Rejection:</span>
+                <span class="info-value"><%= rejectionReason %></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🚗 Vehicle Information</div>
+            <div class="info-row">
+                <span class="info-label">Registration:</span>
+                <span class="info-value"><%= reg %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Make & Model:</span>
+                <span class="info-value"><%= make %> <%= model %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Weight:</span>
+                <span class="info-value"><%= weight %> kg</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">👤 Client Information</div>
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value"><%= clientName %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value"><%= clientEmail %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Phone:</span>
+                <span class="info-value"><%= clientPhone %></span>
+            </div>
+        </div>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
+            <p style="margin: 0; color: #856404; font-weight: 500;">
+                <strong>Next Steps:</strong> Contact the client directly from your dashboard to discuss their feedback and explore a new offer.
+            </p>
+            <a href="<%= link %>" class="button">View in Dashboard</a>
         </div>
     </div>
+
+    <div class="footer">
+        <p><strong>SellYourCar</strong> - Admin Notification</p>
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
+
+    </div>
+</div>
+
 </body>
 </html>

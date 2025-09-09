@@ -69,8 +69,9 @@
             padding: 40px 30px;
         }
 
+        /* Updated: Solid background color instead of gradient */
         .intro-message {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            background-color: #f7fafc;
             border: 1px solid #bbdefb;
             padding: 25px;
             border-radius: 12px;
@@ -413,8 +414,13 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>✅ Your Quote is Ready!</h1>
-            <p>We've reviewed your vehicle and have a final offer for you.</p>
+            <% if (isReoffer) { %>
+                <h1>✨ Revised Offer for You!</h1>
+                <p>We've reviewed your request again and have an updated offer ready.</p>
+            <% } else { %>
+                <h1>✅ Your Quote is Ready!</h1>
+                <p>We've reviewed your vehicle and have a final offer for you.</p>
+            <% } %>
         </div>
         
         <div class="content">
@@ -423,7 +429,11 @@
                     Hello <%= name %>,
                 </p>
                 <p style="margin-top: 10px;">
-                    Thank you for your manual quote request. Our valuation team has successfully reviewed your vehicle and has an offer ready for you.
+                    <% if (isReoffer) { %>
+                        Our valuation team has successfully reviewed your previous quote request and has an updated offer for you.
+                    <% } else { %>
+                        Thank you for your manual quote request. Our valuation team has successfully reviewed your vehicle and has an offer ready for you.
+                    <% } %>
                 </p>
             </div>
             
@@ -487,7 +497,8 @@
             <div class="logo">SellYourCar</div>
             <p>Vehicle valuations you can trust</p>
             <p>Customer Service: <a href="mailto:admin@sellyourcar.info" class="support-link">admin@sellyourcar.info</a></p>
-            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
+            <!-- Updated: sellyourcar.info is now a clickable link -->
+            <p>&copy; <%= new Date().getFullYear() %> <a href="https://sellyourcar.info" style="color: #d1d5db; text-decoration: none;">sellyourcar.info</a> All rights reserved.</p>
         </div>
     </div>
 </body>

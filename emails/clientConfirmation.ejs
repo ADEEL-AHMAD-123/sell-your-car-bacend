@@ -11,7 +11,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             line-height: 1.6;
@@ -72,10 +72,10 @@
             padding: 40px 30px;
         }
         
-        /* Confirmation message block - similar to the intro-message */
+        /* Confirmation message block - now with a solid color */
         .confirmation-box {
-            background: linear-gradient(135deg, #d1f7e0 0%, #a4e5c5 100%);
-            border: 1px solid #71c09b;
+            background-color: #e6f7ef;
+            border: 1px solid #c8e0d4;
             padding: 25px;
             border-radius: 12px;
             margin-bottom: 30px;
@@ -196,7 +196,7 @@
         
         .timeline-step-content {
             flex-grow: 1;
-            padding-top: 5px; /* Added for better vertical alignment */
+            padding-top: 5px;
         }
 
         .timeline-step-content strong {
@@ -212,7 +212,7 @@
         
         /* Questions and support block with improved visibility */
         .support-block {
-            background-color: #f1f5f9; /* Light slate gray background */
+            background-color: #f1f5f9;
             border: 1px solid #e2e8f0;
             padding: 25px;
             border-radius: 12px;
@@ -224,15 +224,15 @@
             margin: 0;
             font-size: 15px;
             line-height: 1.7;
-            color: #1e293b; /* Darker text for visibility */
+            color: #1e293b;
         }
 
         .support-block strong {
-             color: #1e293b;
+              color: #1e293b;
         }
         
         .support-block a {
-            color: #1e40af; /* Deep blue link color */
+            color: #1e40af;
             font-weight: 600;
             text-decoration: none;
         }
@@ -264,7 +264,7 @@
         }
 
         .footer .support-link {
-            color: #ffffff; /* White link color */
+            color: #ffffff;
             text-decoration: none;
         }
 
@@ -330,6 +330,7 @@
             .info-value {
                 text-align: left;
                 font-weight: 700;
+                margin-top: 4px;
             }
 
             .section {
@@ -352,7 +353,7 @@
     <div class="email-container">
         <div class="header">
             <h1>📝 Request Received!</h1>
-            <p>Thank you <%= userName %>, we're reviewing your manual quote</p>
+            <p>Thank you {{customerName}}, we're reviewing your manual quote</p>
         </div>
         
         <div class="content">
@@ -365,28 +366,28 @@
                 <div class="section-title">🚗 Vehicle Details</div>
                 <div class="info-row">
                     <span class="info-label">Registration:</span>
-                    <span class="info-value"><%= regNumber %></span>
+                    <span class="info-value">{{registration}}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Make & Model:</span>
-                    <span class="info-value"><%= make %> <%= model %></span>
+                    <span class="info-value">{{makeAndModel}}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Year:</span>
-                    <span class="info-value"><%= year %></span>
+                    <span class="info-value">{{year}}</span>
                 </div>
-                <% if (typeof userProvidedWeight !== "undefined" && userProvidedWeight) { %>
+                
                 <div class="info-row">
                     <span class="info-label">Vehicle Weight:</span>
-                    <span class="info-value"><%= userProvidedWeight %> kg</span>
+                    <span class="info-value">{{vehicleWeight}}</span>
                 </div>
-                <% } %>
-                <% if (typeof userEstimatedPrice !== "undefined" && userEstimatedPrice) { %>
+                
+                <!-- Conditional rendering: Only show this row if estimatedPrice is available -->
                 <div class="info-row">
                     <span class="info-label">Your Estimated Price:</span>
-                    <span class="info-value">£<%= userEstimatedPrice %></span>
+                    <span class="info-value">{{estimatedPrice}}</span>
                 </div>
-                <% } %>
+                
             </div>
             
             <div class="timeline">
@@ -426,7 +427,7 @@
             <div class="logo">SellYourCar</div>
             <p>Thank you for choosing our manual valuation service</p>
             <p>Customer Service: <a href="mailto:admin@sellyourcar.info" class="support-link">admin@sellyourcar.info</a></p>
-            <p>&copy; <%= new Date().getFullYear() %> sellyourcar.info All rights reserved.</p>
+            <p>&copy; 2025 <a href="http://www.sellyourcar.info" class="support-link">sellyourcar.info</a> All rights reserved.</p>
         </div>
     </div>
 </body>

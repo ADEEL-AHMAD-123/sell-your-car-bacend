@@ -6,6 +6,7 @@ const sendResponse = require("../utils/sendResponse");
 const ErrorResponse = require("../utils/errorResponse");
 const Settings = require("../models/Settings");
 const { getOptimizedImageUrl } = require("../utils/cloudinaryUtils");
+const sendEmail = require("../utils/emailService.js");
 
 // Function to validate UK registration number format
 const isValidUkRegNumber = (reg) => {
@@ -25,14 +26,14 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
   if (!regNumber) {
     return next(new ErrorResponse("Registration number is required.", 400));
   }
-  
+
   const reg = regNumber.trim().toUpperCase();
 
   // Validate the format of the registration number
   if (!isValidUkRegNumber(reg)) {
     return sendResponse(res, 400, "Please enter a valid UK registration number.", {
-        status: "invalid_reg_format",
-        from: "server_validation"
+      status: "invalid_reg_format",
+      from: "server_validation"
     });
   }
 
@@ -76,7 +77,7 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
         status: "manual_previously_rejected",
       });
     }
-    
+
     if (!existingManualQuote.isReviewedByAdmin) {
       return sendResponse(res, 200, "Your manual quote request is still under admin review.", {
         quote: existingManualQuote,
@@ -174,7 +175,6 @@ exports.getQuote = catchAsyncErrors(async (req, res, next) => {
 
 
 
-
 // @desc    Submit a manual quote
 // @route   POST /api/quote/manual-quote
 // @access  Private
@@ -262,7 +262,7 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         "Your manual quote has been reviewed and is awaiting your decision. No further changes can be submitted at this time.",
         {
           quote: existingQuote,
-          status: "manual_reviewed", 
+          status: "manual_reviewed",
         }
       );
     }
@@ -276,12 +276,12 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   if (!existingQuote.vehicleRegistration.WheelPlan && wheelPlan) existingQuote.vehicleRegistration.WheelPlan = wheelPlan;
 
   if (message) existingQuote.manualDetails.message = message;
-  
+
   // 💡 Here is the updated logic for image optimization
   if (Array.isArray(req.files) && req.files.length > 0) {
     // Map over the uploaded files and optimize each image URL
     const uploadedImages = req.files.map(file => getOptimizedImageUrl(file.path));
-    
+
     // Ensure we don't exceed 6 images, append new ones
     existingQuote.manualDetails.images = [...(existingQuote.manualDetails.images || []), ...uploadedImages].slice(0, 6);
   }
@@ -298,14 +298,14 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     resolvedReason = "auto_price_missing";
   } else if (
     typeof userEstimatedPrice === "number" &&
-    existingQuote.estimatedScrapPrice !== null && 
+    existingQuote.estimatedScrapPrice !== null &&
     userEstimatedPrice > existingQuote.estimatedScrapPrice
   ) {
     resolvedReason = "user_thinks_value_higher";
   }
 
   existingQuote.manualDetails.manualQuoteReason = resolvedReason;
-  existingQuote.type = "manual"; 
+  existingQuote.type = "manual";
   existingQuote.manualDetails.lastManualRequestAt = new Date();
   existingQuote.isReviewedByAdmin = false;
   existingQuote.clientDecision = "pending";
@@ -354,10 +354,10 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
         reason: resolvedReason,
         dashboardUrl: `${process.env.FRONTEND_URL}/dashboard/manual-quotes`,
         ourOfferPrice: existingQuote.estimatedScrapPrice,
-        kerbWeight: existingQuote.otherVehicleData.KerbWeight 
+        kerbWeight: existingQuote.otherVehicleData.KerbWeight
       },
     });
-    
+
   } catch (emailErr) {
     console.error("Failed to send manual quote emails:", emailErr.message);
   }
@@ -365,8 +365,8 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
   // === Step 6: Return response ===
   const { _id, createdAt, ...safeFields } = existingQuote.toObject();
 
-  const responseMessage = initialClientDecision === "rejected" 
-    ? "Manual quote resubmitted successfully" 
+  const responseMessage = initialClientDecision === "rejected"
+    ? "Manual quote resubmitted successfully"
     : "Manual quote submitted successfully";
 
   return sendResponse(res, 200, responseMessage, {
@@ -378,8 +378,6 @@ exports.submitManualQuote = catchAsyncErrors(async (req, res, next) => {
     status: "manual_info_appended",
   });
 });
-
-
 
 
 
@@ -413,7 +411,7 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
       _id: id,
       userId: req.user._id,
     }).populate("userId");
-    
+
     if (!quote) return next(new ErrorResponse("Quote not found", 404));
 
     if (quote.clientDecision === "accepted") {
@@ -421,7 +419,7 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
         new ErrorResponse("You have already accepted this quote.", 400)
       );
     }
-    
+
     if (quote.collectionDetails?.pickupDate) {
       return next(
         new ErrorResponse("Collection details already submitted.", 400)
@@ -429,8 +427,8 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
     }
 
     // 3. Determine and save the final price
-    const finalPrice = quote.type === "manual" && quote.adminOfferPrice 
-      ? quote.adminOfferPrice 
+    const finalPrice = quote.type === "manual" && quote.adminOfferPrice
+      ? quote.adminOfferPrice
       : quote.estimatedScrapPrice;
 
     // Set the final price and client decision before saving
@@ -455,14 +453,14 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
       month: 'long',
       day: 'numeric'
     });
-    
+
     // Format the acceptedAt date with full date and time
     const formattedAcceptedAt = new Date(quote.acceptedAt).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
 
     try {
@@ -498,7 +496,7 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
       await sendEmail({
         to: client.email,
         subject: "✅ Quote Confirmed - Collection Scheduled | sellyourcar.info",
-        templateName: "quoteConfirmation", 
+        templateName: "quoteConfirmation",
         templateData: {
           name: `${client.firstName} ${client.lastName}`,
           quoteType: quote.type,
@@ -530,8 +528,6 @@ exports.confirmQuoteWithCollection = catchAsyncErrors(
     });
   }
 );
-
-
 
 
 // @desc    Get all pending manual quotes (admin only)
@@ -611,6 +607,7 @@ exports.getPendingManualQuotes = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+
 // @desc    Review a manual quote (admin only)
 // @route   PATCH /api/admin/manual-quotes/:id/review
 // @access  Admin
@@ -632,10 +629,13 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
   if (!quote || quote.type !== "manual") {
     return next(new ErrorResponse("Manual quote not found.", 404));
   }
-
-  if (quote.clientDecision !== "pending" || quote.isReviewedByAdmin) {
-    return next(new ErrorResponse("This manual quote has already been reviewed or a decision has been made.", 400));
+  // Updated logic: Allow review of both 'pending' and 'rejected' quotes.
+  if (quote.clientDecision !== "pending" && quote.clientDecision !== "rejected") {
+    return next(new ErrorResponse("This quote has already been reviewed or a decision has been made.", 400));
   }
+
+  // 💡 Check if the quote has been previously reviewed
+  const isReoffer = quote.isReviewedByAdmin;
 
   quote.adminOfferPrice = adminOfferPrice;
   if (adminMessage) {
@@ -645,7 +645,10 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
   }
   quote.isReviewedByAdmin = true;
   quote.reviewedAt = new Date();
-  quote.finalPrice = adminOfferPrice; 
+ 
+  // Reset the client decision to 'pending' to allow them to accept this new offer
+  // This essentially puts the quote back into the reviewable state for the client
+  quote.clientDecision = "pending";
   await quote.save();
 
   if (quote.userId && quote.userId.email) {
@@ -659,16 +662,15 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
         templateData: {
           name: clientName || "Valued Customer",
           regNumber: quote.regNumber,
-          // Accessing make, model, year from the new nested object
           make: quote.vehicleRegistration.Make || "N/A",
           model: quote.vehicleRegistration.Model || "N/A",
           year: quote.vehicleRegistration.YearOfManufacture || "N/A",
-          // Accessing weight from the new nested object
-          weight: quote.otherVehicleData.KerbWeight || null,
           userEstimatedPrice: quote.manualDetails.userEstimatedPrice || null,
           adminOfferPrice,
           adminMessage,
           dashboardLink: `${process.env.FRONTEND_URL}`,
+          // ✅ Add the isReoffer variable here
+          isReoffer,
         },
       });
     } catch (emailError) {
@@ -680,6 +682,8 @@ exports.reviewManualQuote = catchAsyncErrors(async (req, res, next) => {
     quote,
   });
 });
+
+
 
 
 // @desc    Get all accepted quotes (manual or auto)
@@ -744,7 +748,7 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
       $or: [
         { "user.firstName": nameRegex },
         { "user.lastName": nameRegex },
-        { fullName: nameRegex }, 
+        { fullName: nameRegex },
       ],
     });
   }
@@ -805,29 +809,52 @@ exports.getAcceptedQuotes = catchAsyncErrors(async (req, res, next) => {
 // @route   PATCH /api/quote/:id/mark-collected
 // @access  Admin
 exports.markAsCollected = catchAsyncErrors(async (req, res, next) => {
+  const { id } = req.params;
+
+  const quote = await Quote.findById(id);
+  if (!quote) {
+    return next(new ErrorResponse("Quote not found.", 404));
+  }
+
+  if (!quote.collectionDetails || quote.clientDecision !== "accepted") {
+    return next(
+      new ErrorResponse(
+        "Collection details not available or quote not accepted.",
+        400
+      )
+    );
+  }
+
+  // Set the collected status and the collection date
+  quote.collectionDetails.collected = true;
+  quote.collectionDetails.collectedAt = new Date();
+  await quote.save();
+
+  sendResponse(res, 200, "Quote marked as collected successfully", { quote });
+});
+
+// @desc    Delete a quote (admin only)
+// @route   DELETE /api/admin/quotes/:id
+// @access  Admin
+exports.deleteQuoteByAdmin = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
 
-  const quote = await Quote.findById(id);
+  // Find the quote by its ID and delete it
+  const quote = await Quote.findByIdAndDelete(id);
+
   if (!quote) {
-    return next(new ErrorResponse("Quote not found.", 404));
+    // If the quote doesn't exist, return a 404 error
+    return next(new ErrorResponse("Quote not found", 404));
   }
 
-  if (!quote.collectionDetails || quote.clientDecision !== "accepted") {
-    return next(
-      new ErrorResponse(
-        "Collection details not available or quote not accepted.",
-        400
-      )
-    );
-  }
-
-  // Set the collected status and the collection date
-  quote.collectionDetails.collected = true;
-  quote.collectionDetails.collectedAt = new Date();
-  await quote.save();
-
-  sendResponse(res, 200, "Quote marked as collected successfully", { quote });
+  res.status(200).json({
+    success: true,
+    data: {},
+    message: 'Quote successfully deleted.',
+  });
 });
+
+
 
 
 
@@ -835,68 +862,218 @@ exports.markAsCollected = catchAsyncErrors(async (req, res, next) => {
 // @route   PATCH /api/quote/:id/reject
 // @access  Private
 exports.rejectQuote = catchAsyncErrors(async (req, res, next) => {
-  const { id } = req.params;
-  const { rejectionReason } = req.body;
+  const { id } = req.params;
+  const { rejectionReason } = req.body;
 
-  const quote = await Quote.findOne({
-    _id: id,
-    userId: req.user._id,
-  }).populate("userId");
+  const quote = await Quote.findOne({
+    _id: id,
+    userId: req.user._id,
+  }).populate("userId");
 
-  if (!quote) {
-    return next(new ErrorResponse("Quote not found.", 404));
-  }
-  
-  if (quote.clientDecision === "accepted") {
-    return next(new ErrorResponse("This quote has already been accepted and cannot be rejected.", 400));
-  }
-  
-  if (quote.type !== 'manual') {
-    return next(new ErrorResponse("Only manual quotes can be rejected by the client.", 400));
-  }
+  if (!quote) {
+    return next(new ErrorResponse("Quote not found.", 404));
+  }
 
-  if (!quote.isReviewedByAdmin) {
-    return next(new ErrorResponse("This quote has not yet been reviewed and cannot be rejected.", 400));
-  }
+  if (quote.clientDecision === "accepted") {
+    return next(new ErrorResponse("This quote has already been accepted and cannot be rejected.", 400));
+  }
 
-  if (!rejectionReason || rejectionReason.trim() === '') {
-    return next(new ErrorResponse("A reason for rejection is required.", 400));
-  }
+  if (quote.type !== 'manual') {
+    return next(new ErrorResponse("Only manual quotes can be rejected by the client.", 400));
+  }
 
-  quote.clientDecision = "rejected";
-  quote.rejectionReason = rejectionReason;
-  quote.rejectedAt = new Date();
-  await quote.save();
+  if (!quote.isReviewedByAdmin) {
+    return next(new ErrorResponse("This quote has not yet been reviewed and cannot be rejected.", 400));
+  }
 
-  const client = quote.userId;
-  // This now checks the new adminOfferPrice field first for manual quotes, falling back to auto price.
-  const price = quote.adminOfferPrice || quote.estimatedScrapPrice; 
+  if (!rejectionReason || rejectionReason.trim() === '') {
+    return next(new ErrorResponse("A reason for rejection is required.", 400));
+  }
 
-  try {
-    await sendEmail({
-      to: process.env.ADMIN_EMAIL,
-      subject: `❌ Quote Rejected - ${quote.regNumber}`,
-      templateName: "adminQuoteRejected",
-      templateData: {
-        quoteType: quote.type,
-        reg: quote.regNumber,
-        // Accessing make, model, weight from the nested objects
-        make: quote.vehicleRegistration.Make || "N/A",
-        model: quote.vehicleRegistration.Model || "N/A",
-        weight: quote.otherVehicleData.KerbWeight || "N/A",
-        price: price || "0",
-        rejectionReason: quote.rejectionReason,
-        clientName: `${client.firstName} ${client.lastName}`,
-        clientEmail: client.email,
-        clientPhone: client.phone || "N/A",
-      },
-    });
-  } catch (emailError) {
-    console.error("Failed to send rejection email:", emailError.message);
-  }
+  quote.clientDecision = "rejected";
+  quote.rejectionReason = rejectionReason;
+  quote.rejectedAt = new Date();
+  await quote.save();
 
-  sendResponse(res, 200, "Quote successfully rejected.", { quote });
+  const client = quote.userId;
+  const price = quote.adminOfferPrice || quote.estimatedScrapPrice;
+
+  const dashboardUrl = `${process.env.FRONTEND_URL}/dashboard/rejected-quotes`;
+
+  try {
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: `Quote Rejected - ${quote.regNumber}`,
+      templateName: "adminQuoteRejected",
+      templateData: {
+        quoteType: quote.type,
+        reg: quote.regNumber,
+        make: quote.vehicleRegistration.Make || "N/A",
+        model: quote.vehicleRegistration.Model || "N/A",
+        weight: quote.otherVehicleData.KerbWeight || "N/A",
+        price: price || "0", 
+        rejectionReason: quote.rejectionReason,
+        clientName: `${client.firstName} ${client.lastName}`,
+        clientEmail: client.email,
+        clientPhone: client.phone || "N/A",
+
+        link: dashboardUrl, 
+      },
+    });
+  } catch (emailError) {
+    console.error("Failed to send rejection email:", emailError.message);
+  }
+
+  sendResponse(res, 200, "Quote successfully rejected.", { quote });
 });
+
+
+
+// @desc    Get all pending auto quotes (admin only)
+// @route   GET /api/admin/auto-quotes/pending
+// @access  Admin
+exports.getPendingAutoQuotes = catchAsyncErrors(async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const {
+    customerName = "",
+    customerEmail = "",
+    customerPhone = "",
+    regNumber = "",
+    make = "",
+    model = "",
+  } = req.query;
+
+  const matchStage = {
+    type: "auto",
+    clientDecision: "pending",
+  };
+
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $match: {
+        ...(customerName && {
+          $or: [
+            { "user.firstName": { $regex: customerName, $options: "i" } },
+            { "user.lastName": { $regex: customerName, $options: "i" } },
+          ],
+        }),
+        ...(customerEmail && {
+          "user.email": { $regex: customerEmail, $options: "i" },
+        }),
+        ...(customerPhone && {
+          "user.phone": { $regex: customerPhone, $options: "i" },
+        }),
+        ...(regNumber && { regNumber: { $regex: regNumber, $options: "i" } }),
+        ...(make && { "vehicleRegistration.Make": { $regex: make, $options: "i" } }),
+        ...(model && { "vehicleRegistration.Model": { $regex: model, $options: "i" } }),
+      },
+    },
+    { $sort: { createdAt: -1 } },
+    {
+      $facet: {
+        metadata: [{ $count: "total" }],
+        data: [{ $skip: skip }, { $limit: limit }],
+      },
+    },
+  ];
+
+  const result = await Quote.aggregate(pipeline);
+  const total = result[0]?.metadata[0]?.total || 0;
+  const quotes = result[0]?.data || [];
+
+  sendResponse(res, 200, "Pending auto quotes fetched successfully", {
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    quotes,
+  });
+});
+
+// @desc    Get all rejected quotes (admin only)
+// @route   GET /api/admin/quotes/rejected
+// @access  Admin
+exports.getRejectedQuotes = catchAsyncErrors(async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const {
+    customerName = "",
+    customerEmail = "",
+    customerPhone = "",
+    regNumber = "",
+    make = "",
+    model = "",
+  } = req.query;
+
+  const matchStage = {
+    clientDecision: "rejected",
+  };
+
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $match: {
+        ...(customerName && {
+          $or: [
+            { "user.firstName": { $regex: customerName, $options: "i" } },
+            { "user.lastName": { $regex: customerName, $options: "i" } },
+          ],
+        }),
+        ...(customerEmail && {
+          "user.email": { $regex: customerEmail, $options: "i" },
+        }),
+        ...(customerPhone && {
+          "user.phone": { $regex: customerPhone, $options: "i" },
+        }),
+        ...(regNumber && { regNumber: { $regex: regNumber, $options: "i" } }),
+        ...(make && { "vehicleRegistration.Make": { $regex: make, $options: "i" } }),
+        ...(model && { "vehicleRegistration.Model": { $regex: model, $options: "i" } }),
+      },
+    },
+    { $sort: { rejectedAt: -1, createdAt: -1 } },
+    {
+      $facet: {
+        metadata: [{ $count: "total" }],
+        data: [{ $skip: skip }, { $limit: limit }],
+      },
+    },
+  ];
+
+  const result = await Quote.aggregate(pipeline);
+  const total = result[0]?.metadata[0]?.total || 0;
+  const quotes = result[0]?.data || [];
+
+  sendResponse(res, 200, "Rejected quotes fetched successfully", {
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    quotes,
+  });
+});
+
 
 // @desc    Get all collected quotes (admin only)
 // @route   GET /api/admin/quotes/collected
