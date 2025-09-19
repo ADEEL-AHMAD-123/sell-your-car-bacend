@@ -12,6 +12,7 @@ const protect = async (req, res, next) => {
   let token; // 1. Check for token in cookies first
 
   if (req.cookies?.token) {
+    
     token = req.cookies.token;
     console.log("Token found in cookies.");
   } // 2. If no cookie, check for token in the Authorization header

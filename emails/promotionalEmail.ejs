@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SellYourCar - Promotional Email</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Client-specific styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        /* Base styles */
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+            height: 100%;
+        }
+
+        .email-wrapper {
+            background-color: #f8fafc;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            margin: 0 auto;
+            max-width: 600px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* Header styles */
+        .header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            padding: 35px 30px;
+            text-align: center;
+        }
+
+        .header .logo {
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: block;
+        }
+
+        .header .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        /* Content styles */
+        .content {
+            padding: 40px 35px;
+            color: #374151;
+        }
+
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 25px;
+        }
+
+        .content-body {
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 35px;
+            color: #4b5563;
+        }
+
+        .content-body p {
+            margin-bottom: 18px;
+        }
+
+        .content-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .content-body h1, .content-body h2, .content-body h3 {
+            color: #111827;
+            margin-top: 28px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .content-body h1 { 
+            font-size: 28px; 
+            margin-top: 0;
+        }
+        .content-body h2 { 
+            font-size: 24px; 
+        }
+        .content-body h3 { 
+            font-size: 20px; 
+        }
+
+        .content-body ul, .content-body ol {
+            margin-bottom: 18px;
+            padding-left: 24px;
+        }
+
+        .content-body li {
+            margin-bottom: 8px;
+            color: #4b5563;
+        }
+
+        .content-body strong {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .content-body a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .content-body a:hover {
+            text-decoration: underline;
+        }
+
+        /* Call-to-Action Button */
+        .cta-section {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border-radius: 8px;
+            color: #ffffff !important;
+            display: inline-block;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 16px 32px;
+            text-decoration: none;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.35);
+        }
+
+        /* Divider */
+        .divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 35px 0;
+        }
+
+        /* Footer styles */
+        .footer {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            color: #f9fafb;
+            padding: 40px 35px;
+            text-align: center;
+        }
+
+        .footer .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .footer .company-info {
+            margin-bottom: 25px;
+        }
+
+        .footer .company-info p {
+            color: #d1d5db;
+            font-size: 16px;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .footer .contact-info {
+            margin-bottom: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        .footer .contact-info p {
+            color: #d1d5db;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+
+        .footer .legal {
+            border-top: 1px solid #374151;
+            margin-top: 25px;
+            padding-top: 25px;
+        }
+
+        .footer .legal p {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .unsubscribe-link {
+            background-color: rgba(96, 165, 250, 0.1);
+            border: 1px solid #60a5fa;
+            border-radius: 6px;
+            color: #60a5fa !important;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 15px;
+            padding: 8px 16px;
+            text-decoration: none;
+        }
+
+        .unsubscribe-link:hover {
+            background-color: #60a5fa;
+            color: #ffffff !important;
+            text-decoration: none;
+        }
+
+        /* Responsive styles */
+        @media only screen and (max-width: 600px) {
+            .email-wrapper {
+                padding: 10px;
+            }
+
+            .email-container {
+                border-radius: 8px;
+                margin: 0;
+                max-width: none;
+                width: 100%;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header .logo {
+                font-size: 28px;
+            }
+
+            .header .tagline {
+                font-size: 14px;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .greeting {
+                font-size: 22px;
+            }
+
+            .content-body {
+                font-size: 15px;
+            }
+
+            .content-body h1 { font-size: 24px; }
+            .content-body h2 { font-size: 20px; }
+            .content-body h3 { font-size: 18px; }
+
+            .cta-button {
+                font-size: 16px;
+                padding: 14px 28px;
+                width: auto;
+            }
+
+            .footer {
+                padding: 30px 20px;
+            }
+
+            .footer .logo {
+                font-size: 24px;
+            }
+        }
+
+        @media only screen and (max-width: 480px) {
+            .cta-button {
+                display: block;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div class="header">
+                <a href="https://sellyourcar.info" class="logo">
+                    SellYourCar
+                </a>
+                <div class="tagline">Your trusted partner in selling cars</div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="content">
+                <!-- Personalized Greeting -->
+                <div class="greeting">
+                    Hello <%= user.firstName %><% if (user.lastName) { %> <%= user.lastName %><% } %>! 👋
+                </div>
+
+                <!-- Email Content -->
+                <div class="content-body">
+                    <%- content %>
+                </div>
+
+                <!-- Call-to-Action -->
+                <div class="cta-section">
+                    <a href="https://sellyourcar.info" class="cta-button">
+                        Visit Our Website
+                    </a>
+                </div>
+
+                <!-- Divider -->
+                <hr class="divider">
+
+                <!-- Additional message -->
+                <div class="content-body">
+                    <p><strong>Why choose SellYourCar?</strong></p>
+                    <p>We make selling your car simple, fast, and profitable. Get the best value for your vehicle with our trusted platform.</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <div class="logo">SellYourCar</div>
+                
+                <div class="company-info">
+                    <p>Making car selling simple and profitable</p>
+                </div>
+
+                <div class="contact-info">
+                    <p>📧 Customer Service: <a href="mailto:admin@sellyourcar.info">admin@sellyourcar.info</a></p>
+                    <p>🌐 Website: <a href="https://sellyourcar.info">sellyourcar.info</a></p>
+                </div>
+
+                <div class="legal">
+                    <p>&copy; <%= new Date().getFullYear() %> SellYourCar.info - All rights reserved.</p>
+                    <p>This email was sent to <%= user.firstName %> at their registered email address.</p>
+                    
+                    <a href="<%= unsubscribeURL %>" class="unsubscribe-link">
+                        ✉️ Unsubscribe from emails
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

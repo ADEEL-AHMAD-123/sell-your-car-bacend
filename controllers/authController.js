@@ -1,4 +1,4 @@
-// authController.js file
+//File: controllers/authController.js file
 const User = require("../models/User");
 const Settings = require("../models/Settings");
 const bcrypt = require("bcryptjs");

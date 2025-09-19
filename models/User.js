@@ -60,6 +60,14 @@ const userSchema = new mongoose.Schema({
     email: String,
     phone: String,
   },
+  // New field for marketing communication
+  marketing: {
+    isSubscribed: {
+      type: Boolean,
+      default: true,
+    },
+    unsubscribeToken: String,
+  },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
 }, {
@@ -83,5 +91,14 @@ userSchema.methods.getResetPasswordToken = function() {
   return resetToken;
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Add a new method to generate a marketing unsubscribe token
+userSchema.methods.getUnsubscribeToken = function() {
+  const unsubscribeToken = crypto.randomBytes(20).toString('hex');
+  this.marketing.unsubscribeToken = crypto
+    .createHash('sha256')
+    .update(unsubscribeToken)
+    .digest('hex');
+  return unsubscribeToken;
+};
 
+module.exports = mongoose.model('User', userSchema);

@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
-// Update the destructured import to include the new functions
+
 const { 
   register, 
   login, 
   logout, 
   getLoggedInUser, 
   verifyEmail,       
-  resendVerificationEmail, // New: Added this function
+  resendVerificationEmail,
   forgotPassword,    
   resetPassword,     
   updatePassword,
-  sendPhoneVerificationOTP, // New: Added this function
+  sendPhoneVerificationOTP, 
   verifyPhone
 } = require('../controllers/authController');
 
